@@ -4,8 +4,9 @@ import java.net.InetAddress;
 import java.util.HashMap;
 
 import br.ufpe.cin.if678.communication.BridgeManager;
-import br.ufpe.cin.if678.communication.ReadThread;
-import br.ufpe.cin.if678.communication.WriteThread;
+import br.ufpe.cin.if678.communication.Reader;
+import br.ufpe.cin.if678.communication.Writer;
+import br.ufpe.cin.if678.util.Pair;
 
 public class Controller {
 
@@ -19,25 +20,31 @@ public class Controller {
 	}
 
 	private HashMap<Integer, InetAddress> mapIDToIP;
-	private HashMap<InetAddress, WriteThread> mapIPToWrite;
-	private HashMap<InetAddress, ReadThread> mapIPToRead;
+	private HashMap<InetAddress, Pair<Writer, Thread>> mapIPToWrite;
+	private HashMap<InetAddress, Pair<Reader, Thread>> mapIPToRead;
 
 	private BridgeManager bridgeManager;
 
 	private Controller() {
 		mapIDToIP = new HashMap<Integer, InetAddress>();
-		mapIPToWrite = new HashMap<InetAddress, WriteThread>();
-		mapIPToRead = new HashMap<InetAddress, ReadThread>();
+		mapIPToWrite = new HashMap<InetAddress, Pair<Writer, Thread>>();
+		mapIPToRead = new HashMap<InetAddress, Pair<Reader, Thread>>();
 
 		this.bridgeManager = new BridgeManager(this);
+		new Thread(bridgeManager).start();
 	}
 
-	public void setWriteThread(InetAddress IP, WriteThread writeThread) {
-		mapIPToWrite.put(IP, writeThread);
+	public void setWriterThread(InetAddress IP, Writer writer, Thread writerThread) {
+		mapIPToWrite.put(IP, new Pair<Writer, Thread>(writer, writerThread));
 	}
 
-	public void setReadThread(InetAddress IP, ReadThread readThread) {
-		mapIPToRead.put(IP, readThread);
+	public void setReaderThread(InetAddress IP, Reader reader, Thread readerThread) {
+		mapIPToRead.put(IP, new Pair<Reader, Thread>(reader, readerThread));
+	}
+
+	public void clientDisconnect(InetAddress IP) {
+		mapIPToRead.get(IP).getSecond().interrupt();
+		mapIPToWrite.get(IP).getFirst().stop();
 	}
 
 }
