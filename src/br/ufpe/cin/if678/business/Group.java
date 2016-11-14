@@ -3,7 +3,7 @@ package br.ufpe.cin.if678.business;
 import java.util.ArrayList;
 import java.util.Date;
 
-public class Group {
+public class Group { //Implementar imagens
 
 	private int ID;
 	private String name;
