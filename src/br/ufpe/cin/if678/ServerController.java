@@ -8,24 +8,25 @@ import br.ufpe.cin.if678.communication.Reader;
 import br.ufpe.cin.if678.communication.Writer;
 import br.ufpe.cin.if678.util.Pair;
 
-public class Controller {
+public class ServerController {
 
-	private static Controller INSTANCE = null;
+	private static ServerController INSTANCE = null;
 
-	public static Controller getInstance() {
+	public static ServerController getInstance() {
 		if (INSTANCE == null) {
-			INSTANCE = new Controller();
+			INSTANCE = new ServerController();
 		}
 		return INSTANCE;
 	}
 
+	@SuppressWarnings("unused")
 	private HashMap<Integer, InetAddress> mapIDToIP;
 	private HashMap<InetAddress, Pair<Writer, Thread>> mapIPToWrite;
 	private HashMap<InetAddress, Pair<Reader, Thread>> mapIPToRead;
 
 	private BridgeManager bridgeManager;
 
-	private Controller() {
+	private ServerController() {
 		mapIDToIP = new HashMap<Integer, InetAddress>();
 		mapIPToWrite = new HashMap<InetAddress, Pair<Writer, Thread>>();
 		mapIPToRead = new HashMap<InetAddress, Pair<Reader, Thread>>();
@@ -44,7 +45,8 @@ public class Controller {
 
 	public void clientDisconnect(InetAddress IP) {
 		mapIPToRead.get(IP).getSecond().interrupt();
-		mapIPToWrite.get(IP).getFirst().stop();
+		mapIPToWrite.get(IP).getFirst().forceStop();
+		System.out.println("Encerrando IP: " + IP.getHostAddress());
 	}
 
 }

@@ -9,7 +9,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import br.ufpe.cin.if678.Controller;
+import br.ufpe.cin.if678.ServerController;
 import br.ufpe.cin.if678.util.Pair;
 
 public class Writer implements Runnable {
@@ -52,7 +52,7 @@ public class Writer implements Runnable {
 				OOS.writeObject(object);
 				OOS.flush();
 			} catch (SocketException e) {
-				Controller.getInstance().clientDisconnect(IP);
+				ServerController.getInstance().clientDisconnect(IP);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
@@ -69,7 +69,7 @@ public class Writer implements Runnable {
 		}
 	}
 
-	public void stop() {
+	public void forceStop() {
 		run = false;
 	}
 

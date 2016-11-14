@@ -5,14 +5,14 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import br.ufpe.cin.if678.Controller;
+import br.ufpe.cin.if678.ServerController;
 
 public class BridgeManager implements Runnable {
 
-	private Controller controller;
+	private ServerController controller;
 	private ServerSocket serverSocket;
 
-	public BridgeManager(Controller controller) {
+	public BridgeManager(ServerController controller) {
 		this.controller = controller;
 
 		try {

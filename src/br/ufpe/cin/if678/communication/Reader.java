@@ -6,7 +6,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 
-import br.ufpe.cin.if678.Controller;
+import br.ufpe.cin.if678.ServerController;
 
 public class Reader implements Runnable {
 
@@ -29,7 +29,7 @@ public class Reader implements Runnable {
 
 				System.out.println(action.getID() + ": " + ((String) object));
 			} catch (SocketException e) {
-				Controller.getInstance().clientDisconnect(IP);
+				ServerController.getInstance().clientDisconnect(IP);
 				return;
 			} catch (IOException e) {
 				e.printStackTrace();
