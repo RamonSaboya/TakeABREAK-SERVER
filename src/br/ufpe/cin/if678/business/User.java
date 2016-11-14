@@ -2,7 +2,7 @@ package br.ufpe.cin.if678.business;
 
 import java.util.Date;
 
-public class User {
+public class User { //Implementar imagens
 
 	private int ID;
 	private String username;
