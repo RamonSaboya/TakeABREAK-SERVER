@@ -7,14 +7,25 @@ import java.net.Socket;
 
 import br.ufpe.cin.if678.ServerController;
 
+/**
+ * Classe de gerenciamento de novas conexões
+ * 
+ * @author Ramon
+ */
 public class BridgeManager implements Runnable {
 
-	private ServerController controller;
+	private ServerController controller; // Instância do controlador (não pode usar singleton, pois é chamado no construtor)
 	private ServerSocket serverSocket;
 
+	/**
+	 * Construtor do gerenciador de novas conexões
+	 * 
+	 * @param controller instância do controlador
+	 */
 	public BridgeManager(ServerController controller) {
 		this.controller = controller;
 
+		// Tenta abrir o servidor do socket na porta 6666 (SAIKAPETTA)
 		try {
 			this.serverSocket = new ServerSocket(6666);
 		} catch (IOException e) {
@@ -22,27 +33,35 @@ public class BridgeManager implements Runnable {
 		}
 	}
 
+	/**
+	 * Método que será executado pela thread
+	 */
 	@Override
 	public void run() {
-		try {
-			while (true) {
+		while (true) {
+			try {
+				// Instrução que bloqueia a thread até o recebimento de alguma conexão
 				Socket socket = serverSocket.accept();
 
+				// Inicia os gerenciadores de leitura e escrita
 				InetAddress IP = socket.getInetAddress();
-				Writer writer = new Writer(IP, socket);
 				Reader reader = new Reader(IP, socket);
+				Writer writer = new Writer(IP, socket);
 
-				Thread writerThread = new Thread(writer);
+				// Inicia as instâncias das threads de leitura e escrita
 				Thread readerThread = new Thread(reader);
+				Thread writerThread = new Thread(writer);
 
+				// Passa as informações para que o controlador possa mapeá-las
 				controller.setWriterThread(IP, writer, writerThread);
 				controller.setReaderThread(IP, reader, readerThread);
-				
-				writerThread.start();
+
+				// Inicia a exeucão das threads de leitura e escrita
 				readerThread.start();
+				writerThread.start();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
 
