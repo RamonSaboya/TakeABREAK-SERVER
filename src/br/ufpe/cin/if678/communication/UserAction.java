@@ -10,7 +10,8 @@ public enum UserAction {
 	SEND_USERNAME(0),
 	REQUEST_USER_LIST(1),
 	SEND_MESSAGE(2),
-	CREATE_GROUP(3);
+	GROUP_CREATE(3),
+	GROUP_ADD_MEMBER(4);
 
 	private int ID; // ID associado a ação
 
