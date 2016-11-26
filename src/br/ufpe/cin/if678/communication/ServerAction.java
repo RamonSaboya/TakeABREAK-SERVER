@@ -7,7 +7,7 @@ package br.ufpe.cin.if678.communication;
  */
 public enum ServerAction {
 
-	ALL_ONLINE(1);
+	SEND_USER_LIST(1);
 
 	private int ID; // ID associado a ação
 

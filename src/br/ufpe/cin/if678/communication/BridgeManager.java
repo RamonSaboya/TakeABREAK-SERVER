@@ -1,7 +1,7 @@
 package br.ufpe.cin.if678.communication;
 
 import java.io.IOException;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -27,7 +27,7 @@ public class BridgeManager implements Runnable {
 
 		// Tenta abrir o servidor do socket na porta 6666 (SAIKAPETTA)
 		try {
-			this.serverSocket = new ServerSocket(6666);
+			this.serverSocket = new ServerSocket(ServerController.MAIN_PORT);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -44,17 +44,17 @@ public class BridgeManager implements Runnable {
 				Socket socket = serverSocket.accept();
 
 				// Inicia os gerenciadores de leitura e escrita
-				InetAddress IP = socket.getInetAddress();
-				Reader reader = new Reader(IP, socket);
-				Writer writer = new Writer(IP, socket);
+				InetSocketAddress address = (InetSocketAddress) socket.getRemoteSocketAddress();
+				Reader reader = new Reader(address, socket);
+				Writer writer = new Writer(address, socket);
 
 				// Inicia as instâncias das threads de leitura e escrita
 				Thread readerThread = new Thread(reader);
 				Thread writerThread = new Thread(writer);
 
 				// Passa as informações para que o controlador possa mapeá-las
-				controller.setWriterThread(IP, writer, writerThread);
-				controller.setReaderThread(IP, reader, readerThread);
+				controller.setWriterThread(address, writer, writerThread);
+				controller.setReaderThread(address, reader, readerThread);
 
 				// Inicia a exeucão das threads de leitura e escrita
 				readerThread.start();
@@ -63,6 +63,10 @@ public class BridgeManager implements Runnable {
 				e.printStackTrace();
 			}
 		}
+	}
+
+	public int getServerPort() {
+		return serverSocket.getLocalPort();
 	}
 
 }

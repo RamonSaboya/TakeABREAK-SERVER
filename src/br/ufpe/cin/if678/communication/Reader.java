@@ -2,7 +2,7 @@ package br.ufpe.cin.if678.communication;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 
@@ -15,7 +15,9 @@ import br.ufpe.cin.if678.ServerController;
  */
 public class Reader implements Runnable {
 
-	private InetAddress IP; // Endereço IP do socket
+	private ServerController controller;
+
+	private InetSocketAddress address; // Endereço IP do socket
 	private Socket socket;
 
 	/**
@@ -24,8 +26,10 @@ public class Reader implements Runnable {
 	 * @param IP endereço IP do socket
 	 * @param socket instância do socket
 	 */
-	public Reader(InetAddress IP, Socket socket) {
-		this.IP = IP;
+	public Reader(InetSocketAddress address, Socket socket) {
+		this.controller = ServerController.getInstance();
+
+		this.address = address;
 		this.socket = socket;
 	}
 
@@ -42,9 +46,15 @@ public class Reader implements Runnable {
 				// Lê a ação e o objecto que esteja relacionado a mesma
 				UserAction action = (UserAction) OIS.readObject();
 				Object object = OIS.readObject();
+
+				if (action == UserAction.SEND_USERNAME) {
+					controller.clientConnected(address, (String) object);
+				} else if (action == UserAction.REQUEST_USER_LIST) {
+					controller.sendClientList(address);
+				}
 			} catch (SocketException e) {
 				// Essa exeção será chamada quando o servidor não conseguir conexão com o cliente
-				ServerController.getInstance().clientDisconnect(IP); // Avisa ao controlador que o cliente desconectou
+				ServerController.getInstance().clientDisconnect(address); // Avisa ao controlador que o cliente desconectou
 				return; // Encerra a execução da thread
 			} catch (IOException e) {
 				e.printStackTrace();

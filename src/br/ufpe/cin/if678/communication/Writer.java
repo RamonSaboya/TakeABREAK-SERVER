@@ -2,7 +2,7 @@ package br.ufpe.cin.if678.communication;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.concurrent.BlockingQueue;
@@ -19,7 +19,7 @@ import br.ufpe.cin.if678.util.Pair;
  */
 public class Writer implements Runnable {
 
-	private InetAddress IP; // Endereço IP do socket
+	private InetSocketAddress address; // Endereço IP do socket
 	private ObjectOutputStream OOS; // Interface de saída de objetos
 
 	/*
@@ -46,8 +46,8 @@ public class Writer implements Runnable {
 	 * @param IP endereço de IP do socket
 	 * @param socket instância do socket
 	 */
-	public Writer(InetAddress IP, Socket socket) {
-		this.IP = IP;
+	public Writer(InetSocketAddress address, Socket socket) {
+		this.address = address;
 
 		// Tenta iniciar a interface de saída de objetos
 		try {
@@ -105,7 +105,7 @@ public class Writer implements Runnable {
 				OOS.flush();
 			} catch (SocketException e) {
 				// Essa exeção será chamada quando o servidor não conseguir conexão com o cliente
-				ServerController.getInstance().clientDisconnect(IP); // Avisa ao controlador que o cliente desconectou
+				ServerController.getInstance().clientDisconnect(address); // Avisa ao controlador que o cliente desconectou
 				return; // Encerra a execução da thread
 			} catch (InterruptedException e) {
 				e.printStackTrace();
