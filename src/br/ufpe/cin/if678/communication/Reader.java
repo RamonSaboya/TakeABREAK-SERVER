@@ -20,6 +20,8 @@ public class Reader implements Runnable {
 	private InetSocketAddress address; // Endereço IP do socket
 	private Socket socket;
 
+	private ObjectInputStream OIS;
+
 	/**
 	 * Construtor do gerenciador de leitura
 	 * 
@@ -31,6 +33,12 @@ public class Reader implements Runnable {
 
 		this.address = address;
 		this.socket = socket;
+
+		try {
+			this.OIS = new ObjectInputStream(socket.getInputStream());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -40,9 +48,6 @@ public class Reader implements Runnable {
 	public void run() {
 		while (true) {
 			try {
-				// Utiliza a inteface de entrada de objetos
-				ObjectInputStream OIS = new ObjectInputStream(socket.getInputStream());
-
 				// Lê a ação e o objecto que esteja relacionado a mesma
 				UserAction action = (UserAction) OIS.readObject();
 				Object object = OIS.readObject();
