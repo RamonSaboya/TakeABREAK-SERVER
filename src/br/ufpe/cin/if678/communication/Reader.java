@@ -34,11 +34,7 @@ public class Reader implements Runnable {
 		this.address = address;
 		this.socket = socket;
 
-		try {
-			this.OIS = new ObjectInputStream(socket.getInputStream());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		this.OIS = null;
 	}
 
 	/**
@@ -48,6 +44,10 @@ public class Reader implements Runnable {
 	public void run() {
 		while (true) {
 			try {
+				if(OIS == null) {
+					OIS = new ObjectInputStream(socket.getInputStream());
+				}
+				
 				// Lê a ação e o objecto que esteja relacionado a mesma
 				UserAction action = (UserAction) OIS.readObject();
 				Object object = OIS.readObject();

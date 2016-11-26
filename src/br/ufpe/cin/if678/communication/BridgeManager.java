@@ -45,6 +45,9 @@ public class BridgeManager implements Runnable {
 
 				// Inicia os gerenciadores de leitura e escrita
 				InetSocketAddress address = (InetSocketAddress) socket.getRemoteSocketAddress();
+
+				System.out.println("[LOG] CONEXÃO INICIADA: " + address.getAddress().getHostAddress() + ":" + address.getPort());
+
 				Reader reader = new Reader(address, socket);
 				Writer writer = new Writer(address, socket);
 

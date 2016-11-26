@@ -2,12 +2,13 @@ package br.ufpe.cin.if678;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.Map;
 
 import br.ufpe.cin.if678.communication.BridgeManager;
 import br.ufpe.cin.if678.communication.Reader;
 import br.ufpe.cin.if678.communication.ServerAction;
 import br.ufpe.cin.if678.communication.Writer;
-import br.ufpe.cin.if678.util.Pair;
+import javafx.util.Pair;
 
 /**
  * Controla todas as threads de leitura e escrita dos sockets de cada cliente
@@ -36,8 +37,8 @@ public class ServerController {
 	}
 
 	// Mapeamentos dos usuários e seus endereços com suas threads de leitura e escrita
-	private HashMap<InetSocketAddress, Pair<Reader, Thread>> mapaddressToRead; // Mapeia um endereço para o thread de leitura
-	private HashMap<InetSocketAddress, Pair<Writer, Thread>> mapaddressToWrite; // Mapeia um endereço para o thread de escrita
+	private HashMap<InetSocketAddress, Pair<Reader, Thread>> mapAddressToRead; // Mapeia um endereço para o thread de leitura
+	private HashMap<InetSocketAddress, Pair<Writer, Thread>> mapAddressToWrite; // Mapeia um endereço para o thread de escrita
 
 	// Lista de usuários online
 	private HashMap<InetSocketAddress, String> userList;
@@ -51,8 +52,8 @@ public class ServerController {
 	 */
 	private ServerController() {
 		// Inicia as variáveis dos mapeamentos
-		this.mapaddressToRead = new HashMap<InetSocketAddress, Pair<Reader, Thread>>();
-		this.mapaddressToWrite = new HashMap<InetSocketAddress, Pair<Writer, Thread>>();
+		this.mapAddressToRead = new HashMap<InetSocketAddress, Pair<Reader, Thread>>();
+		this.mapAddressToWrite = new HashMap<InetSocketAddress, Pair<Writer, Thread>>();
 
 		// Lista de usuários online
 		this.userList = new HashMap<InetSocketAddress, String>();
@@ -71,7 +72,7 @@ public class ServerController {
 	 * @param readerThread thread do gerenciador
 	 */
 	public void setReaderThread(InetSocketAddress address, Reader reader, Thread readerThread) {
-		mapaddressToRead.put(address, new Pair<Reader, Thread>(reader, readerThread));
+		mapAddressToRead.put(address, new Pair<Reader, Thread>(reader, readerThread));
 	}
 
 	/**
@@ -82,7 +83,7 @@ public class ServerController {
 	 * @param writerThread thread do gerenciador
 	 */
 	public void setWriterThread(InetSocketAddress address, Writer writer, Thread writerThread) {
-		mapaddressToWrite.put(address, new Pair<Writer, Thread>(writer, writerThread));
+		mapAddressToWrite.put(address, new Pair<Writer, Thread>(writer, writerThread));
 	}
 
 	/**
@@ -91,16 +92,28 @@ public class ServerController {
 	 * @param address endereço do socket
 	 */
 	public void clientDisconnect(InetSocketAddress address) {
-		mapaddressToRead.get(address).getSecond().interrupt(); // Interrompe a thread de leitura (apenas segurança, thread já deve estar parada nesse ponto)
-		mapaddressToWrite.get(address).getFirst().forceStop(); // Força o encerramento da thread de escrita
+		mapAddressToRead.get(address).getValue().interrupt(); // Interrompe a thread de leitura (apenas segurança, thread já deve estar parada nesse ponto)
+		mapAddressToWrite.get(address).getKey().forceStop(); // Força o encerramento da thread de escrita
 	}
 
 	public void sendClientList(InetSocketAddress address) {
-		mapaddressToWrite.get(address).getFirst().queueAction(ServerAction.SEND_USER_LIST, userList);
+		mapAddressToWrite.get(address).getKey().queueAction(ServerAction.SEND_USER_LIST, userList);
 	}
 
 	public void clientConnected(InetSocketAddress address, String username) {
+		System.out.println("[LOG] USUÁRIO CONECTOU: " + username + " (" + address.getAddress().getHostAddress() + ":" + address.getPort() + ")");
+
 		userList.put(address, username);
+
+		Pair<InetSocketAddress, String> data = new Pair<InetSocketAddress, String>(address, username);
+		for (Map.Entry<InetSocketAddress, Pair<Writer, Thread>> entry : mapAddressToWrite.entrySet()) {
+			InetSocketAddress userAddress = entry.getKey();
+			Writer writer = entry.getValue().getKey();
+
+			if (userAddress != address) {
+				writer.queueAction(ServerAction.SEND_USER_CONNECTED, data);
+			}
+		}
 	}
 
 }
