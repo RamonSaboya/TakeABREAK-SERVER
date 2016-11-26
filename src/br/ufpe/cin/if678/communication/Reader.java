@@ -41,6 +41,7 @@ public class Reader implements Runnable {
 	/**
 	 * Método que será executado pela thread
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public void run() {
 		while (true) {

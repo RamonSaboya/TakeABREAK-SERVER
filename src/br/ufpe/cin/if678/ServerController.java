@@ -4,6 +4,7 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
+import br.ufpe.cin.if678.business.Group;
 import br.ufpe.cin.if678.communication.BridgeManager;
 import br.ufpe.cin.if678.communication.Reader;
 import br.ufpe.cin.if678.communication.ServerAction;
@@ -123,6 +124,14 @@ public class ServerController {
 	public void createGroup(Pair<InetSocketAddress, String> data) {
 		InetSocketAddress founder = data.getFirst();
 		String name = data.getSecond();
+
+		Group group = groupManager.getGroup(name);
+
+		if (group == null) {
+			group = groupManager.createGroup(founder, name);
+		}
+
+		mapAddressToWrite.get(founder).getFirst().queueAction(ServerAction.SEND_GROUP, group);
 	}
 
 }

@@ -3,6 +3,8 @@ package br.ufpe.cin.if678;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 
+import br.ufpe.cin.if678.business.Group;
+
 public class GroupManager {
 
 	private ServerController controller;
@@ -24,7 +26,9 @@ public class GroupManager {
 	}
 
 	public Group createGroup(InetSocketAddress founder, String name) {
-		return groups.put(name, new Group(name, founder));
+		groups.put(name, new Group(name, founder));
+
+		return groups.get(name);
 	}
 
 }

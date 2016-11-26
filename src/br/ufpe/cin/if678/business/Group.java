@@ -1,106 +1,70 @@
 package br.ufpe.cin.if678.business;
 
-import java.util.ArrayList;
+import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.util.Date;
+import java.util.HashMap;
 
-public class Group { //Implementar imagens
+public class Group implements Serializable {
 
-	private int ID;
+	private static final long serialVersionUID = 518398686073207805L;
+
 	private String name;
-	private ArrayList<User> members;
-	private ArrayList<User> admin;
-	private int amount;
-	private Date birthday;
+	private InetSocketAddress founder;
+	private Date creationDate;
 
-	public Group(int ID, String name, User user, Date date) {
-		this.ID = ID;
+	private HashMap<InetSocketAddress, Boolean> members;
+
+	public Group(String name, InetSocketAddress founder) {
 		this.name = name;
-		this.members = new ArrayList<User>();
-		this.admin = new ArrayList<User>();
-		this.members.add(user);
-		this.admin.add(user);
-		this.amount = 1;
-		this.birthday = date;
-	}
+		this.founder = founder;
+		this.creationDate = new Date();
 
-	public boolean add(User checkUser, User user) {
-		if (this.admin.contains(checkUser)) {
-			this.members.add(user);
-			this.amount++;
-			return true;
-		} else {
-			return false;
-		}
-
-	}
-
-	public boolean remove(User checkUser, User user) {
-		if (this.admin.contains(checkUser)) {
-			this.members.remove(user);
-			this.amount--;
-			return true;
-		} else {
-			return false;
-		}
-
-	}
-
-	public boolean becomeAdmin(User checkUser, User user) {
-		if (this.admin.contains(checkUser)) {
-			this.admin.add(user);
-			return true;
-		} else {
-			return false;
-		}
-
-	}
-
-	public int getID() {
-		return ID;
+		this.members = new HashMap<InetSocketAddress, Boolean>();
 	}
 
 	public String getName() {
-		return this.name;
+		return name;
 	}
 
-	public ArrayList<User> getMembers() {
-		return this.members;
+	public InetSocketAddress getFounder() {
+		return founder;
 	}
 
-	public ArrayList<User> getAdmin() {
-		return this.admin;
+	public Date getCreationDate() {
+		return creationDate;
 	}
 
-	public int getAmount() {
-		return this.amount;
+	public HashMap<InetSocketAddress, Boolean> getMembers() {
+		return members;
 	}
 
-	public Date getBirthday() {
-		return this.birthday;
+	public boolean isMember(InetSocketAddress address) {
+		return founder == address || members.containsKey(address);
 	}
 
-	public void setID(int ID) {
-		this.ID = ID;
+	public boolean isAdmin(InetSocketAddress address) {
+		return founder == address || (members.containsKey(address) && members.get(address));
 	}
 
-	public void setName(String name) {
+	public void changeGroupName(String name) {
 		this.name = name;
 	}
 
-	public void setMembers(ArrayList<User> members) {
-		this.members = members;
+	public void addMember(InetSocketAddress address) {
+		members.put(address, false);
 	}
 
-	public void setAdmin(ArrayList<User> admin) {
-		this.admin = admin;
+	public void removeMember(InetSocketAddress admin, InetSocketAddress address) {
+		members.remove(address);
 	}
 
-	public void setAmount(int amount) {
-		this.amount = amount;
+	public void turnAdmin(InetSocketAddress address) {
+		members.replace(address, true);
 	}
 
-	public void setBirthday(Date birthday) {
-		this.birthday = birthday;
+	public void turnMember(InetSocketAddress address) {
+		members.replace(address, false);
 	}
 
 }
