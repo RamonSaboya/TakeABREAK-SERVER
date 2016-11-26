@@ -7,6 +7,7 @@ import java.net.Socket;
 import java.net.SocketException;
 
 import br.ufpe.cin.if678.ServerController;
+import br.ufpe.cin.if678.util.Pair;
 
 /**
  * Gerenciador de leitura de um socket
@@ -44,18 +45,26 @@ public class Reader implements Runnable {
 	public void run() {
 		while (true) {
 			try {
-				if(OIS == null) {
+				if (OIS == null) {
 					OIS = new ObjectInputStream(socket.getInputStream());
 				}
-				
+
 				// Lê a ação e o objecto que esteja relacionado a mesma
 				UserAction action = (UserAction) OIS.readObject();
 				Object object = OIS.readObject();
 
-				if (action == UserAction.SEND_USERNAME) {
+				switch (action) {
+				case SEND_USERNAME:
 					controller.clientConnected(address, (String) object);
-				} else if (action == UserAction.REQUEST_USER_LIST) {
+					break;
+				case REQUEST_USER_LIST:
 					controller.sendClientList(address);
+					break;
+				case SEND_MESSAGE:
+					break;
+				case CREATE_GROUP:
+					controller.createGroup((Pair<InetSocketAddress, String>) object);
+					break;
 				}
 			} catch (SocketException e) {
 				// Essa exeção será chamada quando o servidor não conseguir conexão com o cliente

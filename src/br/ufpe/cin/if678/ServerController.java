@@ -47,6 +47,8 @@ public class ServerController {
 	private BridgeManager bridgeManager;
 	private Thread thread;
 
+	private GroupManager groupManager;
+
 	/**
 	 * Construtor para iniciar a instância
 	 */
@@ -62,6 +64,8 @@ public class ServerController {
 		this.bridgeManager = new BridgeManager(this);
 		this.thread = new Thread(bridgeManager);
 		this.thread.start();
+
+		this.groupManager = new GroupManager(this);
 	}
 
 	/**
@@ -114,6 +118,11 @@ public class ServerController {
 				writer.queueAction(ServerAction.SEND_USER_CONNECTED, data);
 			}
 		}
+	}
+
+	public void createGroup(Pair<InetSocketAddress, String> data) {
+		InetSocketAddress founder = data.getFirst();
+		String name = data.getSecond();
 	}
 
 }
