@@ -8,7 +8,7 @@ import br.ufpe.cin.if678.communication.BridgeManager;
 import br.ufpe.cin.if678.communication.Reader;
 import br.ufpe.cin.if678.communication.ServerAction;
 import br.ufpe.cin.if678.communication.Writer;
-import javafx.util.Pair;
+import br.ufpe.cin.if678.util.Pair;
 
 /**
  * Controla todas as threads de leitura e escrita dos sockets de cada cliente
@@ -92,12 +92,12 @@ public class ServerController {
 	 * @param address endereço do socket
 	 */
 	public void clientDisconnect(InetSocketAddress address) {
-		mapAddressToRead.get(address).getValue().interrupt(); // Interrompe a thread de leitura (apenas segurança, thread já deve estar parada nesse ponto)
-		mapAddressToWrite.get(address).getKey().forceStop(); // Força o encerramento da thread de escrita
+		mapAddressToRead.get(address).getSecond().interrupt(); // Interrompe a thread de leitura (apenas segurança, thread já deve estar parada nesse ponto)
+		mapAddressToWrite.get(address).getFirst().forceStop(); // Força o encerramento da thread de escrita
 	}
 
 	public void sendClientList(InetSocketAddress address) {
-		mapAddressToWrite.get(address).getKey().queueAction(ServerAction.SEND_USER_LIST, userList);
+		mapAddressToWrite.get(address).getFirst().queueAction(ServerAction.SEND_USER_LIST, userList);
 	}
 
 	public void clientConnected(InetSocketAddress address, String username) {
@@ -108,7 +108,7 @@ public class ServerController {
 		Pair<InetSocketAddress, String> data = new Pair<InetSocketAddress, String>(address, username);
 		for (Map.Entry<InetSocketAddress, Pair<Writer, Thread>> entry : mapAddressToWrite.entrySet()) {
 			InetSocketAddress userAddress = entry.getKey();
-			Writer writer = entry.getValue().getKey();
+			Writer writer = entry.getValue().getFirst();
 
 			if (userAddress != address) {
 				writer.queueAction(ServerAction.SEND_USER_CONNECTED, data);
