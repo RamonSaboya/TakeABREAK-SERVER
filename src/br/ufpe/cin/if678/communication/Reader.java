@@ -62,11 +62,13 @@ public class Reader implements Runnable {
 					controller.sendClientList(address);
 					break;
 				case SEND_MESSAGE:
+					controller.deliverMessage((Pair<String, Object>) object);
 					break;
 				case GROUP_CREATE:
 					controller.createGroup((Pair<InetSocketAddress, String>) object);
 					break;
 				case GROUP_ADD_MEMBER:
+					controller.groupAddMember((Pair<String, InetSocketAddress>) object);
 					break;
 				}
 			} catch (SocketException e) {

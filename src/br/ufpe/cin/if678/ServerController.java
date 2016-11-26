@@ -91,6 +91,10 @@ public class ServerController {
 		mapAddressToWrite.put(address, new Pair<Writer, Thread>(writer, writerThread));
 	}
 
+	private Writer getWriter(InetSocketAddress address) {
+		return mapAddressToWrite.get(address).getFirst();
+	}
+
 	/**
 	 * Avisa à thread de leitura que a conexão do socket foi encerrada
 	 * 
@@ -132,6 +136,32 @@ public class ServerController {
 		}
 
 		mapAddressToWrite.get(founder).getFirst().queueAction(ServerAction.SEND_GROUP, group);
+	}
+
+	public void groupAddMember(Pair<String, InetSocketAddress> data) {
+		String name = data.getFirst();
+		InetSocketAddress user = data.getSecond();
+
+		Group group = groupManager.getGroup(name);
+		group.addMember(user);
+
+		getWriter(group.getFounder()).queueAction(ServerAction.GROUP_ADD_MEMBER, new Pair<String, InetSocketAddress>(name, user));
+		if (group.getMembersAmount() > 2) {
+			for (InetSocketAddress member : group.getMembers().keySet()) {
+				getWriter(member).queueAction(ServerAction.GROUP_ADD_MEMBER, new Pair<String, InetSocketAddress>(name, user));
+			}
+		}
+	}
+
+	public void deliverMessage(Pair<String, Object> data) {
+		String name = data.getFirst();
+
+		Group group = groupManager.getGroup(name);
+
+		getWriter(group.getFounder()).queueAction(ServerAction.SEND_MESSAGE, data);
+		for (InetSocketAddress member : group.getMembers().keySet()) {
+			getWriter(member).queueAction(ServerAction.SEND_MESSAGE, data);
+		}
 	}
 
 }
