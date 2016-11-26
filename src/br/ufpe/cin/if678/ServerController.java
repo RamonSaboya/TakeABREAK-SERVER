@@ -3,11 +3,12 @@ package br.ufpe.cin.if678;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
-import br.ufpe.cin.if678.business.Group;
 import br.ufpe.cin.if678.communication.BridgeManager;
 import br.ufpe.cin.if678.communication.Reader;
-import br.ufpe.cin.if678.communication.ServerAction;
+import br.ufpe.cin.if678.communication.Listener;
+import br.ufpe.cin.if678.communication.UserAction;
 import br.ufpe.cin.if678.communication.Writer;
 import br.ufpe.cin.if678.util.Pair;
 
@@ -38,15 +39,17 @@ public class ServerController {
 	}
 
 	// Mapeamentos dos usuários e seus endereços com suas threads de leitura e escrita
-	private HashMap<InetSocketAddress, Pair<Reader, Thread>> mapAddressToRead; // Mapeia um endereço para o thread de leitura
-	private HashMap<InetSocketAddress, Pair<Writer, Thread>> mapAddressToWrite; // Mapeia um endereço para o thread de escrita
+	private HashMap<InetSocketAddress, Pair<Reader, Thread>> mapAddressToReader; // Mapeia um endereço para o thread de leitura
+	private HashMap<InetSocketAddress, Pair<Writer, Thread>> mapAddressToWriter; // Mapeia um endereço para o thread de escrita
 
 	// Lista de usuários online
-	private HashMap<InetSocketAddress, String> userList;
+	private HashMap<InetSocketAddress, String> addressToName;
 
 	// Gerenciador de novas conexões e sua thread
 	private BridgeManager bridgeManager;
 	private Thread thread;
+
+	private Listener listener;
 
 	private GroupManager groupManager;
 
@@ -55,18 +58,40 @@ public class ServerController {
 	 */
 	private ServerController() {
 		// Inicia as variáveis dos mapeamentos
-		this.mapAddressToRead = new HashMap<InetSocketAddress, Pair<Reader, Thread>>();
-		this.mapAddressToWrite = new HashMap<InetSocketAddress, Pair<Writer, Thread>>();
-
-		// Lista de usuários online
-		this.userList = new HashMap<InetSocketAddress, String>();
+		this.mapAddressToReader = new HashMap<InetSocketAddress, Pair<Reader, Thread>>();
+		this.mapAddressToWriter = new HashMap<InetSocketAddress, Pair<Writer, Thread>>();
 
 		// Inicia a thread que administra novas conexões
 		this.bridgeManager = new BridgeManager(this);
 		this.thread = new Thread(bridgeManager);
 		this.thread.start();
 
+		this.listener = new Listener(this);
+
 		this.groupManager = new GroupManager(this);
+
+		// Lista de usuários online
+		this.addressToName = new HashMap<InetSocketAddress, String>();
+	}
+
+	public Reader getReader(InetSocketAddress address) {
+		return mapAddressToReader.get(address).getFirst();
+	}
+
+	public Writer getWriter(InetSocketAddress address) {
+		return mapAddressToWriter.get(address).getFirst();
+	}
+
+	public Set<Map.Entry<InetSocketAddress, Pair<Writer, Thread>>> getWriters() {
+		return mapAddressToWriter.entrySet();
+	}
+
+	public GroupManager getGroupManager() {
+		return groupManager;
+	}
+
+	public HashMap<InetSocketAddress, String> getAddressToName() {
+		return addressToName;
 	}
 
 	/**
@@ -77,7 +102,7 @@ public class ServerController {
 	 * @param readerThread thread do gerenciador
 	 */
 	public void setReaderThread(InetSocketAddress address, Reader reader, Thread readerThread) {
-		mapAddressToRead.put(address, new Pair<Reader, Thread>(reader, readerThread));
+		mapAddressToReader.put(address, new Pair<Reader, Thread>(reader, readerThread));
 	}
 
 	/**
@@ -88,11 +113,7 @@ public class ServerController {
 	 * @param writerThread thread do gerenciador
 	 */
 	public void setWriterThread(InetSocketAddress address, Writer writer, Thread writerThread) {
-		mapAddressToWrite.put(address, new Pair<Writer, Thread>(writer, writerThread));
-	}
-
-	private Writer getWriter(InetSocketAddress address) {
-		return mapAddressToWrite.get(address).getFirst();
+		mapAddressToWriter.put(address, new Pair<Writer, Thread>(writer, writerThread));
 	}
 
 	/**
@@ -101,66 +122,28 @@ public class ServerController {
 	 * @param address endereço do socket
 	 */
 	public void clientDisconnect(InetSocketAddress address) {
-		mapAddressToRead.get(address).getSecond().interrupt(); // Interrompe a thread de leitura (apenas segurança, thread já deve estar parada nesse ponto)
-		mapAddressToWrite.get(address).getFirst().forceStop(); // Força o encerramento da thread de escrita
+		mapAddressToReader.get(address).getSecond().interrupt(); // Interrompe a thread de leitura (apenas segurança, thread já deve estar parada nesse ponto)
+		mapAddressToWriter.get(address).getFirst().forceStop(); // Força o encerramento da thread de escrita
 	}
 
-	public void sendClientList(InetSocketAddress address) {
-		mapAddressToWrite.get(address).getFirst().queueAction(ServerAction.SEND_USER_LIST, userList);
-	}
-
-	public void clientConnected(InetSocketAddress address, String username) {
-		System.out.println("[LOG] USUÁRIO CONECTOU: " + username + " (" + address.getAddress().getHostAddress() + ":" + address.getPort() + ")");
-
-		userList.put(address, username);
-
-		Pair<InetSocketAddress, String> data = new Pair<InetSocketAddress, String>(address, username);
-		for (Map.Entry<InetSocketAddress, Pair<Writer, Thread>> entry : mapAddressToWrite.entrySet()) {
-			InetSocketAddress userAddress = entry.getKey();
-			Writer writer = entry.getValue().getFirst();
-
-			if (userAddress != address) {
-				writer.queueAction(ServerAction.SEND_USER_CONNECTED, data);
-			}
-		}
-	}
-
-	public void createGroup(Pair<InetSocketAddress, String> data) {
-		InetSocketAddress founder = data.getFirst();
-		String name = data.getSecond();
-
-		Group group = groupManager.getGroup(name);
-
-		if (group == null) {
-			group = groupManager.createGroup(founder, name);
-		}
-
-		mapAddressToWrite.get(founder).getFirst().queueAction(ServerAction.SEND_GROUP, group);
-	}
-
-	public void groupAddMember(Pair<String, InetSocketAddress> data) {
-		String name = data.getFirst();
-		InetSocketAddress user = data.getSecond();
-
-		Group group = groupManager.getGroup(name);
-		group.addMember(user);
-
-		getWriter(group.getFounder()).queueAction(ServerAction.GROUP_ADD_MEMBER, new Pair<String, InetSocketAddress>(name, user));
-		if (group.getMembersAmount() > 2) {
-			for (InetSocketAddress member : group.getMembers().keySet()) {
-				getWriter(member).queueAction(ServerAction.GROUP_ADD_MEMBER, new Pair<String, InetSocketAddress>(name, user));
-			}
-		}
-	}
-
-	public void deliverMessage(Pair<String, Object> data) {
-		String name = data.getFirst();
-
-		Group group = groupManager.getGroup(name);
-
-		getWriter(group.getFounder()).queueAction(ServerAction.SEND_MESSAGE, data);
-		for (InetSocketAddress member : group.getMembers().keySet()) {
-			getWriter(member).queueAction(ServerAction.SEND_MESSAGE, data);
+	@SuppressWarnings("unchecked")
+	public void callEvent(InetSocketAddress address, UserAction action, Object object) {
+		switch (action) {
+		case SEND_USERNAME:
+			listener.onUserConnect(address, (String) object);
+			break;
+		case REQUEST_USER_LIST:
+			listener.onUserListRequest(address);
+			break;
+		case SEND_MESSAGE:
+			listener.onGroupMessage((Pair<String, Object>) object);
+			break;
+		case GROUP_CREATE:
+			listener.onGroupCreate((Pair<InetSocketAddress, String>) object);
+			break;
+		case GROUP_ADD_MEMBER:
+			listener.onGroupAddMember((Pair<String, InetSocketAddress>) object);
+			break;
 		}
 	}
 

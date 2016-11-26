@@ -6,6 +6,14 @@ import java.net.UnknownHostException;
 public class ServerMain {
 
 	public static void main(String[] args) {
+		new ServerMain();
+	}
+
+	public ServerMain() {
+		initialize();
+	}
+
+	private void initialize() {
 		try {
 			ServerController.getInstance();
 

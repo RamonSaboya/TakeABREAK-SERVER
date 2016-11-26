@@ -7,7 +7,6 @@ import java.net.Socket;
 import java.net.SocketException;
 
 import br.ufpe.cin.if678.ServerController;
-import br.ufpe.cin.if678.util.Pair;
 
 /**
  * Gerenciador de leitura de um socket
@@ -41,7 +40,6 @@ public class Reader implements Runnable {
 	/**
 	 * Método que será executado pela thread
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public void run() {
 		while (true) {
@@ -54,23 +52,7 @@ public class Reader implements Runnable {
 				UserAction action = (UserAction) OIS.readObject();
 				Object object = OIS.readObject();
 
-				switch (action) {
-				case SEND_USERNAME:
-					controller.clientConnected(address, (String) object);
-					break;
-				case REQUEST_USER_LIST:
-					controller.sendClientList(address);
-					break;
-				case SEND_MESSAGE:
-					controller.deliverMessage((Pair<String, Object>) object);
-					break;
-				case GROUP_CREATE:
-					controller.createGroup((Pair<InetSocketAddress, String>) object);
-					break;
-				case GROUP_ADD_MEMBER:
-					controller.groupAddMember((Pair<String, InetSocketAddress>) object);
-					break;
-				}
+				controller.callEvent(address, action, object);
 			} catch (SocketException e) {
 				// Essa exeção será chamada quando o servidor não conseguir conexão com o cliente
 				ServerController.getInstance().clientDisconnect(address); // Avisa ao controlador que o cliente desconectou
