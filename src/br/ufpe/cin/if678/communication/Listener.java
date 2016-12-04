@@ -6,6 +6,7 @@ import java.util.Map;
 import br.ufpe.cin.if678.ServerController;
 import br.ufpe.cin.if678.business.Group;
 import br.ufpe.cin.if678.util.Pair;
+import br.ufpe.cin.if678.util.Tuple;
 
 public class Listener {
 
@@ -63,14 +64,14 @@ public class Listener {
 		}
 	}
 
-	public void onGroupMessage(Pair<String, Object> data) {
-		String name = data.getFirst();
+	public void onGroupMessage(Tuple<String, InetSocketAddress, Object> tuple) {
+		String name = tuple.getFirst();
 
 		Group group = controller.getGroupManager().getGroup(name);
 
-		controller.getWriter(group.getFounder()).queueAction(ServerAction.GROUP_MESSAGE, data);
+		controller.getWriter(group.getFounder()).queueAction(ServerAction.GROUP_MESSAGE, tuple);
 		for (InetSocketAddress member : group.getMembers().keySet()) {
-			controller.getWriter(member).queueAction(ServerAction.GROUP_MESSAGE, data);
+			controller.getWriter(member).queueAction(ServerAction.GROUP_MESSAGE, tuple);
 		}
 	}
 

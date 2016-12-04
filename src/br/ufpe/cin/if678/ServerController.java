@@ -6,11 +6,12 @@ import java.util.Map;
 import java.util.Set;
 
 import br.ufpe.cin.if678.communication.BridgeManager;
-import br.ufpe.cin.if678.communication.Reader;
 import br.ufpe.cin.if678.communication.Listener;
+import br.ufpe.cin.if678.communication.Reader;
 import br.ufpe.cin.if678.communication.UserAction;
 import br.ufpe.cin.if678.communication.Writer;
 import br.ufpe.cin.if678.util.Pair;
+import br.ufpe.cin.if678.util.Tuple;
 
 /**
  * Controla todas as threads de leitura e escrita dos sockets de cada cliente
@@ -136,7 +137,8 @@ public class ServerController {
 			listener.onUserListRequest(address);
 			break;
 		case SEND_MESSAGE:
-			listener.onGroupMessage((Pair<String, Object>) object);
+			Pair<String, Object> pair = (Pair<String, Object>) object;
+			listener.onGroupMessage(new Tuple<String, InetSocketAddress, Object>(pair.getFirst(), address, pair.getSecond()));
 			break;
 		case GROUP_CREATE:
 			listener.onGroupCreate((Pair<InetSocketAddress, String>) object);
