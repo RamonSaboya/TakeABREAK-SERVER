@@ -46,6 +46,7 @@ public class Listener {
 			group = controller.getGroupManager().createGroup(founder, name);
 		}
 
+		System.out.println("Enviando grupo");
 		controller.getWriter(founder).queueAction(ServerAction.SEND_GROUP, group);
 	}
 
