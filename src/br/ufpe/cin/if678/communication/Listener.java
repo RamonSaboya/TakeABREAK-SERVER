@@ -20,6 +20,7 @@ public class Listener {
 		System.out.println("[LOG] USUÁRIO CONECTOU: " + username + " (" + address.getAddress().getHostAddress() + ":" + address.getPort() + ")");
 
 		controller.getAddressToName().put(address, username);
+		controller.getNameToAddress().put(username, address);
 
 		Pair<InetSocketAddress, String> data = new Pair<InetSocketAddress, String>(address, username);
 		for (Map.Entry<InetSocketAddress, Pair<Writer, Thread>> entry : controller.getWriters()) {
@@ -57,7 +58,7 @@ public class Listener {
 		Group group = controller.getGroupManager().getGroup(name);
 		group.addMember(user);
 
-		System.out.println("adcionando membro: " + name);
+		System.out.println("adcionando membro: " + controller.getNameToAddress().get(user));
 
 		controller.getWriter(group.getFounder()).queueAction(ServerAction.GROUP_ADD_MEMBER, new Pair<String, InetSocketAddress>(name, user));
 		if (group.getMembersAmount() > 2) {

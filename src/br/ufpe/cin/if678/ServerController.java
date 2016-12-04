@@ -45,6 +45,7 @@ public class ServerController {
 
 	// Lista de usuários online
 	private HashMap<InetSocketAddress, String> addressToName;
+	private HashMap<String, InetSocketAddress> nameToAddress;
 
 	// Gerenciador de novas conexões e sua thread
 	private BridgeManager bridgeManager;
@@ -73,6 +74,7 @@ public class ServerController {
 
 		// Lista de usuários online
 		this.addressToName = new HashMap<InetSocketAddress, String>();
+		this.nameToAddress = new HashMap<String, InetSocketAddress>();
 	}
 
 	public Reader getReader(InetSocketAddress address) {
@@ -93,6 +95,10 @@ public class ServerController {
 
 	public HashMap<InetSocketAddress, String> getAddressToName() {
 		return addressToName;
+	}
+
+	public HashMap<String, InetSocketAddress> getNameToAddress() {
+		return nameToAddress;
 	}
 
 	/**
