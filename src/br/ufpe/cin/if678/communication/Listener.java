@@ -56,9 +56,10 @@ public class Listener {
 		InetSocketAddress user = data.getSecond();
 
 		Group group = controller.getGroupManager().getGroup(name);
+		if (group.isMember(user)) {
+			return;
+		}
 		group.addMember(user);
-
-		System.out.println("adcionando membro: " + controller.getNameToAddress().get(user));
 
 		controller.getWriter(group.getFounder()).queueAction(ServerAction.GROUP_ADD_MEMBER, new Pair<String, InetSocketAddress>(name, user));
 		if (group.getMembersAmount() > 2) {
@@ -75,7 +76,6 @@ public class Listener {
 
 		controller.getWriter(group.getFounder()).queueAction(ServerAction.GROUP_MESSAGE, tuple);
 		for (InetSocketAddress member : group.getMembers().keySet()) {
-			System.out.println("Membro: " + controller.getAddressToName().get(member));
 			controller.getWriter(member).queueAction(ServerAction.GROUP_MESSAGE, tuple);
 		}
 	}
