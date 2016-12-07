@@ -2,6 +2,7 @@ package br.ufpe.cin.if678;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,6 +41,7 @@ public class ServerController {
 	}
 
 	// Lista de usuários online
+	private Set<Integer> onlineIDs;
 	private HashMap<Integer, Pair<String, InetSocketAddress>> IDToNameAddress;
 	private HashMap<String, Integer> nameToID;
 	private HashMap<InetSocketAddress, Integer> addressToID;
@@ -74,6 +76,7 @@ public class ServerController {
 		this.groupManager = new GroupManager(this);
 
 		// Lista de usuários online
+		this.onlineIDs = new HashSet<Integer>();
 		this.IDToNameAddress = new HashMap<Integer, Pair<String, InetSocketAddress>>();
 		this.nameToID = new HashMap<String, Integer>();
 		this.addressToID = new HashMap<InetSocketAddress, Integer>();
@@ -95,6 +98,10 @@ public class ServerController {
 		return groupManager;
 	}
 
+	public boolean isOnline(int ID) {
+		return onlineIDs.contains(ID);
+	}
+
 	public HashMap<Integer, Pair<String, InetSocketAddress>> getIDToNameAddress() {
 		return IDToNameAddress;
 	}
@@ -105,6 +112,10 @@ public class ServerController {
 
 	public HashMap<InetSocketAddress, Integer> getAddressToID() {
 		return addressToID;
+	}
+
+	public String getAddressPort(InetSocketAddress address) {
+		return address.getAddress().getHostAddress() + ":" + address.getPort();
 	}
 
 	public void registerConnection(int ID, InetSocketAddress address) {
@@ -140,8 +151,12 @@ public class ServerController {
 	 * @param address endereço do socket
 	 */
 	public void clientDisconnect(InetSocketAddress address) {
-		mapIDToReader.get(address).getSecond().interrupt(); // Interrompe a thread de leitura (apenas segurança, thread já deve estar parada nesse ponto)
-		mapIDToWriter.get(address).getFirst().forceStop(); // Força o encerramento da thread de escrita
+		int ID = addressToID.get(address);
+
+		mapIDToReader.get(ID).getSecond().interrupt(); // Interrompe a thread de leitura (apenas segurança, thread já deve estar parada nesse ponto)
+		mapIDToWriter.get(ID).getFirst().forceStop(); // Força o encerramento da thread de escrita
+
+		System.out.println("[LOG] USUÁRIO DESCONECTOU: <" + ID + ", " + IDToNameAddress.get(ID).getFirst() + ", " + getAddressPort(address) + ">");
 	}
 
 	@SuppressWarnings("unchecked")
@@ -157,12 +172,11 @@ public class ServerController {
 			listener.onGroupCreate((Pair<Integer, String>) object);
 			break;
 		case GROUP_ADD_MEMBER:
-			Pair<String, Integer> pair1 = (Pair<String, Integer>) object;
-			listener.onGroupAddMember(new Tuple<Integer, String, Integer>(addressToID.get(address), pair1.getFirst(), pair1.getSecond()));
+			listener.onGroupAddMember((Pair<String, Integer>) object);
 			break;
 		case SEND_MESSAGE:
-			Pair<String, Object> pair2 = (Pair<String, Object>) object;
-			listener.onGroupMessage(new Tuple<String, Integer, Object>(pair2.getFirst(), addressToID.get(address), pair2.getSecond()));
+			Pair<String, Object> pair = (Pair<String, Object>) object;
+			listener.onGroupMessage(new Tuple<String, Integer, Object>(pair.getFirst(), addressToID.get(address), pair.getSecond()));
 			break;
 		}
 	}

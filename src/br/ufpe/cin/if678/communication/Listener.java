@@ -17,7 +17,7 @@ public class Listener {
 	}
 
 	public void onUserConnect(int ID, String username) {
-		if (controller.getNameToID().containsKey(username)) {
+		if (controller.getNameToID().containsKey(username) && controller.isOnline(ID)) {
 			controller.getWriter(ID).queueAction(ServerAction.VERIFY_USERNAME, -1);
 			return;
 		}
@@ -38,6 +38,8 @@ public class Listener {
 				writer.queueAction(ServerAction.USER_CONNECTED, data);
 			}
 		}
+
+		System.out.println("[LOG] USUÁRIO CONECTOU:    <" + ID + ", " + username + ", " + controller.getAddressPort(address) + ">");
 	}
 
 	public void onUserListRequest(int ID) {
@@ -57,27 +59,18 @@ public class Listener {
 		controller.getWriter(founder).queueAction(ServerAction.SEND_GROUP, group);
 	}
 
-	public void onGroupAddMember(Tuple<Integer, String, Integer> data) {
-		int requestFrom = data.getFirst();
-		String name = data.getSecond();
-		Integer user = data.getThird();
+	public void onGroupAddMember(Pair<String, Integer> data) {
+		String name = data.getFirst();
+		Integer user = data.getSecond();
 
 		Group group = controller.getGroupManager().getGroup(name);
 		if (!group.isMember(user)) {
 			group.addMember(user);
 		}
 
-		if (requestFrom != group.getFounderID()) {
-			controller.getWriter(requestFrom).queueAction(ServerAction.GROUP_ADD_MEMBER, new Pair<String, Integer>(name, user));
-		}
-
-		controller.getWriter(group.getFounderID()).queueAction(ServerAction.GROUP_ADD_MEMBER, new Pair<String, Integer>(name, user));
-		if (group.getMembersAmount() > 2) {
-			for (int member : group.getMembers().keySet()) {
-				if (member != requestFrom) {
-					controller.getWriter(member).queueAction(ServerAction.GROUP_ADD_MEMBER, new Pair<String, Integer>(name, user));
-				}
-			}
+		controller.getWriter(group.getFounderID()).queueAction(ServerAction.GROUP_ADD_MEMBER, group);
+		for (int member : group.getMembers().keySet()) {
+			controller.getWriter(member).queueAction(ServerAction.GROUP_ADD_MEMBER, group);
 		}
 	}
 
