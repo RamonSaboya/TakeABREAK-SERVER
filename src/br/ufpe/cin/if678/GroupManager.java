@@ -25,8 +25,8 @@ public class GroupManager {
 		return groups.containsKey(name);
 	}
 
-	public Group createGroup(InetSocketAddress founder, String name) {
-		groups.put(name, new Group(name, founder));
+	public Group createGroup(int founderID, String name) {
+		groups.put(name, new Group(name, founderID));
 
 		return groups.get(name);
 	}

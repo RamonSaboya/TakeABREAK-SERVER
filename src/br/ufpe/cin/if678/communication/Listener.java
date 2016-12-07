@@ -16,29 +16,36 @@ public class Listener {
 		this.controller = controller;
 	}
 
-	public void onUserConnect(InetSocketAddress address, String username) {
-		System.out.println("[LOG] USUÁRIO CONECTOU: " + username + " (" + address.getAddress().getHostAddress() + ":" + address.getPort() + ")");
+	public void onUserConnect(int ID, String username) {
+		if (controller.getNameToID().containsKey(username)) {
+			controller.getWriter(ID).queueAction(ServerAction.VERIFY_USERNAME, -1);
+			return;
+		}
 
-		controller.getAddressToName().put(address, username);
-		controller.getNameToAddress().put(username, address);
+		InetSocketAddress address = controller.getIDToNameAddress().get(ID).getSecond();
 
-		Pair<InetSocketAddress, String> data = new Pair<InetSocketAddress, String>(address, username);
-		for (Map.Entry<InetSocketAddress, Pair<Writer, Thread>> entry : controller.getWriters()) {
-			InetSocketAddress userAddress = entry.getKey();
+		controller.getWriter(ID).queueAction(ServerAction.VERIFY_USERNAME, ID);
+
+		controller.getNameToID().put(username, ID);
+		controller.getIDToNameAddress().replace(ID, new Pair<String, InetSocketAddress>(username, address));
+
+		Tuple<Integer, String, InetSocketAddress> data = new Tuple<Integer, String, InetSocketAddress>(ID, username, address);
+		for (Map.Entry<Integer, Pair<Writer, Thread>> entry : controller.getWriters()) {
+			int userID = entry.getKey();
 			Writer writer = entry.getValue().getFirst();
 
-			if (userAddress != address) {
-				writer.queueAction(ServerAction.SEND_USER_CONNECTED, data);
+			if (userID != ID) {
+				writer.queueAction(ServerAction.USER_CONNECTED, data);
 			}
 		}
 	}
 
-	public void onUserListRequest(InetSocketAddress address) {
-		controller.getWriter(address).queueAction(ServerAction.SEND_USERS_LIST, controller.getAddressToName());
+	public void onUserListRequest(int ID) {
+		controller.getWriter(ID).queueAction(ServerAction.USERS_LIST_UPDATE, controller.getIDToNameAddress());
 	}
 
-	public void onGroupCreate(Pair<InetSocketAddress, String> data) {
-		InetSocketAddress founder = data.getFirst();
+	public void onGroupCreate(Pair<Integer, String> data) {
+		int founder = data.getFirst();
 		String name = data.getSecond();
 
 		Group group = controller.getGroupManager().getGroup(name);
@@ -47,35 +54,40 @@ public class Listener {
 			group = controller.getGroupManager().createGroup(founder, name);
 		}
 
-		System.out.println("Enviando grupo: " + group.getName());
 		controller.getWriter(founder).queueAction(ServerAction.SEND_GROUP, group);
 	}
 
-	public void onGroupAddMember(Pair<String, InetSocketAddress> data) {
-		String name = data.getFirst();
-		InetSocketAddress user = data.getSecond();
+	public void onGroupAddMember(Tuple<Integer, String, Integer> data) {
+		int requestFrom = data.getFirst();
+		String name = data.getSecond();
+		Integer user = data.getThird();
 
 		Group group = controller.getGroupManager().getGroup(name);
-		if (group.isMember(user)) {
-			return;
+		if (!group.isMember(user)) {
+			group.addMember(user);
 		}
-		group.addMember(user);
 
-		controller.getWriter(group.getFounder()).queueAction(ServerAction.GROUP_ADD_MEMBER, new Pair<String, InetSocketAddress>(name, user));
+		if (requestFrom != group.getFounderID()) {
+			controller.getWriter(requestFrom).queueAction(ServerAction.GROUP_ADD_MEMBER, new Pair<String, Integer>(name, user));
+		}
+
+		controller.getWriter(group.getFounderID()).queueAction(ServerAction.GROUP_ADD_MEMBER, new Pair<String, Integer>(name, user));
 		if (group.getMembersAmount() > 2) {
-			for (InetSocketAddress member : group.getMembers().keySet()) {
-				controller.getWriter(member).queueAction(ServerAction.GROUP_ADD_MEMBER, new Pair<String, InetSocketAddress>(name, user));
+			for (int member : group.getMembers().keySet()) {
+				if (member != requestFrom) {
+					controller.getWriter(member).queueAction(ServerAction.GROUP_ADD_MEMBER, new Pair<String, Integer>(name, user));
+				}
 			}
 		}
 	}
 
-	public void onGroupMessage(Tuple<String, InetSocketAddress, Object> tuple) {
+	public void onGroupMessage(Tuple<String, Integer, Object> tuple) {
 		String name = tuple.getFirst();
 
 		Group group = controller.getGroupManager().getGroup(name);
 
-		controller.getWriter(group.getFounder()).queueAction(ServerAction.GROUP_MESSAGE, tuple);
-		for (InetSocketAddress member : group.getMembers().keySet()) {
+		controller.getWriter(group.getFounderID()).queueAction(ServerAction.GROUP_MESSAGE, tuple);
+		for (int member : group.getMembers().keySet()) {
 			controller.getWriter(member).queueAction(ServerAction.GROUP_MESSAGE, tuple);
 		}
 	}

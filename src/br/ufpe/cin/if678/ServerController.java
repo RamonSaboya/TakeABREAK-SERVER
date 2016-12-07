@@ -39,13 +39,14 @@ public class ServerController {
 		return INSTANCE;
 	}
 
-	// Mapeamentos dos usuários e seus endereços com suas threads de leitura e escrita
-	private HashMap<InetSocketAddress, Pair<Reader, Thread>> mapAddressToReader; // Mapeia um endereço para o thread de leitura
-	private HashMap<InetSocketAddress, Pair<Writer, Thread>> mapAddressToWriter; // Mapeia um endereço para o thread de escrita
-
 	// Lista de usuários online
-	private HashMap<InetSocketAddress, String> addressToName;
-	private HashMap<String, InetSocketAddress> nameToAddress;
+	private HashMap<Integer, Pair<String, InetSocketAddress>> IDToNameAddress;
+	private HashMap<String, Integer> nameToID;
+	private HashMap<InetSocketAddress, Integer> addressToID;
+
+	// Mapeamentos dos usuários e seus endereços com suas threads de leitura e escrita
+	private HashMap<Integer, Pair<Reader, Thread>> mapIDToReader; // Mapeia um endereço para o thread de leitura
+	private HashMap<Integer, Pair<Writer, Thread>> mapIDToWriter; // Mapeia um endereço para o thread de escrita
 
 	// Gerenciador de novas conexões e sua thread
 	private BridgeManager bridgeManager;
@@ -60,8 +61,8 @@ public class ServerController {
 	 */
 	private ServerController() {
 		// Inicia as variáveis dos mapeamentos
-		this.mapAddressToReader = new HashMap<InetSocketAddress, Pair<Reader, Thread>>();
-		this.mapAddressToWriter = new HashMap<InetSocketAddress, Pair<Writer, Thread>>();
+		this.mapIDToReader = new HashMap<Integer, Pair<Reader, Thread>>();
+		this.mapIDToWriter = new HashMap<Integer, Pair<Writer, Thread>>();
 
 		// Inicia a thread que administra novas conexões
 		this.bridgeManager = new BridgeManager(this);
@@ -73,32 +74,42 @@ public class ServerController {
 		this.groupManager = new GroupManager(this);
 
 		// Lista de usuários online
-		this.addressToName = new HashMap<InetSocketAddress, String>();
-		this.nameToAddress = new HashMap<String, InetSocketAddress>();
+		this.IDToNameAddress = new HashMap<Integer, Pair<String, InetSocketAddress>>();
+		this.nameToID = new HashMap<String, Integer>();
+		this.addressToID = new HashMap<InetSocketAddress, Integer>();
 	}
 
-	public Reader getReader(InetSocketAddress address) {
-		return mapAddressToReader.get(address).getFirst();
+	public Reader getReader(Integer ID) {
+		return mapIDToReader.get(ID).getFirst();
 	}
 
-	public Writer getWriter(InetSocketAddress address) {
-		return mapAddressToWriter.get(address).getFirst();
+	public Writer getWriter(Integer ID) {
+		return mapIDToWriter.get(ID).getFirst();
 	}
 
-	public Set<Map.Entry<InetSocketAddress, Pair<Writer, Thread>>> getWriters() {
-		return mapAddressToWriter.entrySet();
+	public Set<Map.Entry<Integer, Pair<Writer, Thread>>> getWriters() {
+		return mapIDToWriter.entrySet();
 	}
 
 	public GroupManager getGroupManager() {
 		return groupManager;
 	}
 
-	public HashMap<InetSocketAddress, String> getAddressToName() {
-		return addressToName;
+	public HashMap<Integer, Pair<String, InetSocketAddress>> getIDToNameAddress() {
+		return IDToNameAddress;
 	}
 
-	public HashMap<String, InetSocketAddress> getNameToAddress() {
-		return nameToAddress;
+	public HashMap<String, Integer> getNameToID() {
+		return nameToID;
+	}
+
+	public HashMap<InetSocketAddress, Integer> getAddressToID() {
+		return addressToID;
+	}
+
+	public void registerConnection(int ID, InetSocketAddress address) {
+		IDToNameAddress.put(ID, new Pair<String, InetSocketAddress>(null, address));
+		addressToID.put(address, ID);
 	}
 
 	/**
@@ -108,8 +119,8 @@ public class ServerController {
 	 * @param reader gerenciador de leitura
 	 * @param readerThread thread do gerenciador
 	 */
-	public void setReaderThread(InetSocketAddress address, Reader reader, Thread readerThread) {
-		mapAddressToReader.put(address, new Pair<Reader, Thread>(reader, readerThread));
+	public void setReaderThread(int ID, Reader reader, Thread readerThread) {
+		mapIDToReader.put(ID, new Pair<Reader, Thread>(reader, readerThread));
 	}
 
 	/**
@@ -119,8 +130,8 @@ public class ServerController {
 	 * @param writer gerenciador de escrita
 	 * @param writerThread thread do gerenciador
 	 */
-	public void setWriterThread(InetSocketAddress address, Writer writer, Thread writerThread) {
-		mapAddressToWriter.put(address, new Pair<Writer, Thread>(writer, writerThread));
+	public void setWriterThread(int ID, Writer writer, Thread writerThread) {
+		mapIDToWriter.put(ID, new Pair<Writer, Thread>(writer, writerThread));
 	}
 
 	/**
@@ -129,28 +140,29 @@ public class ServerController {
 	 * @param address endereço do socket
 	 */
 	public void clientDisconnect(InetSocketAddress address) {
-		mapAddressToReader.get(address).getSecond().interrupt(); // Interrompe a thread de leitura (apenas segurança, thread já deve estar parada nesse ponto)
-		mapAddressToWriter.get(address).getFirst().forceStop(); // Força o encerramento da thread de escrita
+		mapIDToReader.get(address).getSecond().interrupt(); // Interrompe a thread de leitura (apenas segurança, thread já deve estar parada nesse ponto)
+		mapIDToWriter.get(address).getFirst().forceStop(); // Força o encerramento da thread de escrita
 	}
 
 	@SuppressWarnings("unchecked")
 	public void callEvent(InetSocketAddress address, UserAction action, Object object) {
 		switch (action) {
-		case SEND_USERNAME:
-			listener.onUserConnect(address, (String) object);
+		case REQUEST_USERNAME:
+			listener.onUserConnect(addressToID.get(address), (String) object);
 			break;
 		case REQUEST_USER_LIST:
-			listener.onUserListRequest(address);
-			break;
-		case SEND_MESSAGE:
-			Pair<String, Object> pair = (Pair<String, Object>) object;
-			listener.onGroupMessage(new Tuple<String, InetSocketAddress, Object>(pair.getFirst(), address, pair.getSecond()));
+			listener.onUserListRequest(addressToID.get(address));
 			break;
 		case GROUP_CREATE:
-			listener.onGroupCreate((Pair<InetSocketAddress, String>) object);
+			listener.onGroupCreate((Pair<Integer, String>) object);
 			break;
 		case GROUP_ADD_MEMBER:
-			listener.onGroupAddMember((Pair<String, InetSocketAddress>) object);
+			Pair<String, Integer> pair1 = (Pair<String, Integer>) object;
+			listener.onGroupAddMember(new Tuple<Integer, String, Integer>(addressToID.get(address), pair1.getFirst(), pair1.getSecond()));
+			break;
+		case SEND_MESSAGE:
+			Pair<String, Object> pair2 = (Pair<String, Object>) object;
+			listener.onGroupMessage(new Tuple<String, Integer, Object>(pair2.getFirst(), addressToID.get(address), pair2.getSecond()));
 			break;
 		}
 	}

@@ -15,6 +15,8 @@ import br.ufpe.cin.if678.ServerController;
  */
 public class BridgeManager implements Runnable {
 
+	private static int nextID = 1;
+
 	private ServerController controller; // Instância do controlador (não pode usar singleton, pois é chamado no construtor)
 	private ServerSocket serverSocket;
 
@@ -45,7 +47,10 @@ public class BridgeManager implements Runnable {
 				Socket socket = serverSocket.accept();
 
 				// Inicia os gerenciadores de leitura e escrita
+				int ID = nextID++;
 				InetSocketAddress address = (InetSocketAddress) socket.getRemoteSocketAddress();
+
+				controller.registerConnection(ID, address);
 
 				System.out.println("[LOG] CONEXÃO INICIADA: " + address.getAddress().getHostAddress() + ":" + address.getPort());
 
@@ -57,8 +62,8 @@ public class BridgeManager implements Runnable {
 				Thread writerThread = new Thread(writer);
 
 				// Passa as informações para que o controlador possa mapeá-las
-				controller.setWriterThread(address, writer, writerThread);
-				controller.setReaderThread(address, reader, readerThread);
+				controller.setWriterThread(ID, writer, writerThread);
+				controller.setReaderThread(ID, reader, readerThread);
 
 				// Inicia a exeucão das threads de leitura e escrita
 				readerThread.start();
