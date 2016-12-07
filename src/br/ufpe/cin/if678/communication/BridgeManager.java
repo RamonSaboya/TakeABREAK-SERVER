@@ -1,7 +1,6 @@
 package br.ufpe.cin.if678.communication;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -30,7 +29,7 @@ public class BridgeManager implements Runnable {
 
 		// Tenta abrir o servidor do socket na porta 6666 (SAIKAPETTA)
 		try {
-			this.serverSocket = new ServerSocket(ServerController.MAIN_PORT, 50, InetAddress.getByName("0.0.0.0"));
+			this.serverSocket = new ServerSocket(ServerController.MAIN_PORT);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
