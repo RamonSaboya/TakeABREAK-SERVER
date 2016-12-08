@@ -2,6 +2,7 @@ package br.ufpe.cin.if678;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Scanner;
 
 public class ServerMain {
 
@@ -21,6 +22,13 @@ public class ServerMain {
 			System.out.println("Servidor iniciado no IP: " + IP + ":" + ServerController.MAIN_PORT);
 
 			System.out.println("Pronto para receber conexões");
+
+			Scanner scanner = new Scanner(System.in);
+			scanner.nextLine();
+
+			ServerController.getInstance().exit();
+
+			scanner.close();
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}

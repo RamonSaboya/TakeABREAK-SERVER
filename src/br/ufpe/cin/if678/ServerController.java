@@ -241,16 +241,22 @@ public class ServerController {
 
 		int ID = addressToID.get(address);
 
+		System.out.println("[LOG] USUÁRIO DESCONECTOU: <" + ID + ", " + IDToNameAddress.get(ID).getFirst() + ", " + getAddressPort(address) + ">");
+
 		IDToNameAddress.remove(ID);
 		addressToID.remove(address);
 
 		onlineIDs.remove(ID);
 
-		for (Map.Entry<InetSocketAddress, Pair<Writer, Thread>> entry : getWriters()) {
-			getWriter(entry.getKey()).queueAction(ServerAction.USERS_LIST_UPDATE, getIDToNameAddress());
-		}
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				for (Map.Entry<InetSocketAddress, Pair<Writer, Thread>> entry : getWriters()) {
+					getWriter(entry.getKey()).queueAction(ServerAction.USERS_LIST_UPDATE, IDToNameAddress);
+				}
+			}
+		}).start();
 
-		System.out.println("[LOG] USUÁRIO DESCONECTOU: <" + ID + ", " + IDToNameAddress.get(ID).getFirst() + ", " + getAddressPort(address) + ">");
 	}
 
 	@SuppressWarnings("unchecked")
