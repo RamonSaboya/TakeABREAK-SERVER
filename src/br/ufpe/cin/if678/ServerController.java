@@ -181,6 +181,9 @@ public class ServerController {
 			Pair<String, Object> pair = (Pair<String, Object>) object;
 			listener.onGroupMessage(new Tuple<String, Integer, Object>(pair.getFirst(), addressToID.get(address), pair.getSecond()));
 			break;
+		case RECONNECT:
+			listener.onReconnect((Tuple<Integer, String, InetSocketAddress>) object);
+			break;
 		}
 	}
 
