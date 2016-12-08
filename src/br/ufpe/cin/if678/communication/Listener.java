@@ -102,7 +102,7 @@ public class Listener {
 		controller.getIDToNameAddress().put(ID, new Pair<String, InetSocketAddress>(username, address));
 
 		for (Map.Entry<InetSocketAddress, Pair<Writer, Thread>> entry : controller.getWriters()) {
-			controller.getWriter(entry.getKey()).queueAction(ServerAction.USERS_LIST_UPDATE, controller.getIDToNameAddress());
+			controller.getWriter(entry.getKey()).queueAction(ServerAction.USERS_LIST_UPDATE, controller.getIDToNameAddress().clone());
 		}
 	}
 
