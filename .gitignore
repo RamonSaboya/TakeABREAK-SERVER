@@ -8,6 +8,7 @@ tmp/**/*
 *.tmp
 *.bak
 *.swp
+*.ser
 *~.nib
 local.properties
 .classpath
