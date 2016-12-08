@@ -1,19 +1,14 @@
 package br.ufpe.cin.if678;
 
-import java.net.InetSocketAddress;
 import java.util.HashMap;
 
 import br.ufpe.cin.if678.business.Group;
 
 public class GroupManager {
 
-	private ServerController controller;
-
 	private HashMap<String, Group> groups;
 
-	public GroupManager(ServerController controller) {
-		this.controller = controller;
-
+	public GroupManager() {
 		this.groups = new HashMap<String, Group>();
 	}
 

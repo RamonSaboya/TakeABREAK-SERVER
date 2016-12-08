@@ -47,8 +47,8 @@ public class ServerController {
 	private HashMap<InetSocketAddress, Integer> addressToID;
 
 	// Mapeamentos dos usuários e seus endereços com suas threads de leitura e escrita
-	private HashMap<Integer, Pair<Reader, Thread>> mapIDToReader; // Mapeia um endereço para o thread de leitura
-	private HashMap<Integer, Pair<Writer, Thread>> mapIDToWriter; // Mapeia um endereço para o thread de escrita
+	private HashMap<InetSocketAddress, Pair<Reader, Thread>> mapIDToReader; // Mapeia um endereço para o thread de leitura
+	private HashMap<InetSocketAddress, Pair<Writer, Thread>> mapIDToWriter; // Mapeia um endereço para o thread de escrita
 
 	// Gerenciador de novas conexões e sua thread
 	private BridgeManager bridgeManager;
@@ -63,8 +63,8 @@ public class ServerController {
 	 */
 	private ServerController() {
 		// Inicia as variáveis dos mapeamentos
-		this.mapIDToReader = new HashMap<Integer, Pair<Reader, Thread>>();
-		this.mapIDToWriter = new HashMap<Integer, Pair<Writer, Thread>>();
+		this.mapIDToReader = new HashMap<InetSocketAddress, Pair<Reader, Thread>>();
+		this.mapIDToWriter = new HashMap<InetSocketAddress, Pair<Writer, Thread>>();
 
 		// Inicia a thread que administra novas conexões
 		this.bridgeManager = new BridgeManager(this);
@@ -73,7 +73,7 @@ public class ServerController {
 
 		this.listener = new Listener(this);
 
-		this.groupManager = new GroupManager(this);
+		this.groupManager = new GroupManager();
 
 		// Lista de usuários online
 		this.onlineIDs = new HashSet<Integer>();
@@ -82,15 +82,23 @@ public class ServerController {
 		this.addressToID = new HashMap<InetSocketAddress, Integer>();
 	}
 
-	public Reader getReader(Integer ID) {
-		return mapIDToReader.get(ID).getFirst();
+	public Reader getReader(InetSocketAddress address) {
+		return mapIDToReader.get(address).getFirst();
 	}
 
-	public Writer getWriter(Integer ID) {
-		return mapIDToWriter.get(ID).getFirst();
+	public Reader getReader(int ID) {
+		return mapIDToReader.get(IDToNameAddress.get(ID).getSecond()).getFirst();
 	}
 
-	public Set<Map.Entry<Integer, Pair<Writer, Thread>>> getWriters() {
+	public Writer getWriter(InetSocketAddress address) {
+		return mapIDToWriter.get(address).getFirst();
+	}
+
+	public Writer getWriter(int ID) {
+		return mapIDToWriter.get(IDToNameAddress.get(ID).getSecond()).getFirst();
+	}
+
+	public Set<Map.Entry<InetSocketAddress, Pair<Writer, Thread>>> getWriters() {
 		return mapIDToWriter.entrySet();
 	}
 
@@ -118,11 +126,6 @@ public class ServerController {
 		return address.getAddress().getHostAddress() + ":" + address.getPort();
 	}
 
-	public void registerConnection(int ID, InetSocketAddress address) {
-		IDToNameAddress.put(ID, new Pair<String, InetSocketAddress>(null, address));
-		addressToID.put(address, ID);
-	}
-
 	/**
 	 * Associa uma thread de leitura à um endereço address
 	 * 
@@ -130,8 +133,8 @@ public class ServerController {
 	 * @param reader gerenciador de leitura
 	 * @param readerThread thread do gerenciador
 	 */
-	public void setReaderThread(int ID, Reader reader, Thread readerThread) {
-		mapIDToReader.put(ID, new Pair<Reader, Thread>(reader, readerThread));
+	public void setReaderThread(InetSocketAddress address, Reader reader, Thread readerThread) {
+		mapIDToReader.put(address, new Pair<Reader, Thread>(reader, readerThread));
 	}
 
 	/**
@@ -141,8 +144,8 @@ public class ServerController {
 	 * @param writer gerenciador de escrita
 	 * @param writerThread thread do gerenciador
 	 */
-	public void setWriterThread(int ID, Writer writer, Thread writerThread) {
-		mapIDToWriter.put(ID, new Pair<Writer, Thread>(writer, writerThread));
+	public void setWriterThread(InetSocketAddress address, Writer writer, Thread writerThread) {
+		mapIDToWriter.put(address, new Pair<Writer, Thread>(writer, writerThread));
 	}
 
 	/**
@@ -153,8 +156,8 @@ public class ServerController {
 	public void clientDisconnect(InetSocketAddress address) {
 		int ID = addressToID.get(address);
 
-		mapIDToReader.get(ID).getSecond().interrupt(); // Interrompe a thread de leitura (apenas segurança, thread já deve estar parada nesse ponto)
-		mapIDToWriter.get(ID).getFirst().forceStop(); // Força o encerramento da thread de escrita
+		mapIDToReader.get(address).getSecond().interrupt(); // Interrompe a thread de leitura (apenas segurança, thread já deve estar parada nesse ponto)
+		mapIDToWriter.get(address).getFirst().forceStop(); // Força o encerramento da thread de escrita
 
 		System.out.println("[LOG] USUÁRIO DESCONECTOU: <" + ID + ", " + IDToNameAddress.get(ID).getFirst() + ", " + getAddressPort(address) + ">");
 	}
@@ -163,10 +166,10 @@ public class ServerController {
 	public void callEvent(InetSocketAddress address, UserAction action, Object object) {
 		switch (action) {
 		case REQUEST_USERNAME:
-			listener.onUserConnect(addressToID.get(address), (String) object);
+			listener.onUserConnect((String) object, address);
 			break;
 		case REQUEST_USER_LIST:
-			listener.onUserListRequest(addressToID.get(address));
+			listener.onUserListRequest(address);
 			break;
 		case GROUP_CREATE:
 			listener.onGroupCreate((Pair<Integer, String>) object);

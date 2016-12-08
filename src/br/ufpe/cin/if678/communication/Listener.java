@@ -10,31 +10,38 @@ import br.ufpe.cin.if678.util.Tuple;
 
 public class Listener {
 
+	private static int nextID = 1;
+
 	private ServerController controller;
 
 	public Listener(ServerController controller) {
 		this.controller = controller;
 	}
 
-	public void onUserConnect(int ID, String username) {
-		if (controller.getNameToID().containsKey(username) && controller.isOnline(ID)) {
-			controller.getWriter(ID).queueAction(ServerAction.VERIFY_USERNAME, -1);
+	public void onUserConnect(String username, InetSocketAddress address) {
+		int ID;
+
+		if (controller.getNameToID().containsKey(username) && controller.isOnline(controller.getNameToID().get(username))) {
+			controller.getWriter(address).queueAction(ServerAction.VERIFY_USERNAME, -1);
 			return;
+		} else if (controller.getNameToID().containsKey(username)) {
+			ID = controller.getNameToID().get(username);
+		} else {
+			ID = nextID++;
 		}
 
-		InetSocketAddress address = controller.getIDToNameAddress().get(ID).getSecond();
+		controller.getWriter(address).queueAction(ServerAction.VERIFY_USERNAME, ID);
 
-		controller.getWriter(ID).queueAction(ServerAction.VERIFY_USERNAME, ID);
-
+		controller.getAddressToID().put(address, ID);
 		controller.getNameToID().put(username, ID);
-		controller.getIDToNameAddress().replace(ID, new Pair<String, InetSocketAddress>(username, address));
+		controller.getIDToNameAddress().put(ID, new Pair<String, InetSocketAddress>(username, address));
 
 		Tuple<Integer, String, InetSocketAddress> data = new Tuple<Integer, String, InetSocketAddress>(ID, username, address);
-		for (Map.Entry<Integer, Pair<Writer, Thread>> entry : controller.getWriters()) {
-			int userID = entry.getKey();
+		for (Map.Entry<InetSocketAddress, Pair<Writer, Thread>> entry : controller.getWriters()) {
+			InetSocketAddress userAddress = entry.getKey();
 			Writer writer = entry.getValue().getFirst();
 
-			if (userID != ID) {
+			if (userAddress != address) {
 				writer.queueAction(ServerAction.USER_CONNECTED, data);
 			}
 		}
@@ -42,8 +49,8 @@ public class Listener {
 		System.out.println("[LOG] USUÁRIO CONECTOU:    <" + ID + ", " + username + ", " + controller.getAddressPort(address) + ">");
 	}
 
-	public void onUserListRequest(int ID) {
-		controller.getWriter(ID).queueAction(ServerAction.USERS_LIST_UPDATE, controller.getIDToNameAddress());
+	public void onUserListRequest(InetSocketAddress address) {
+		controller.getWriter(address).queueAction(ServerAction.USERS_LIST_UPDATE, controller.getIDToNameAddress());
 	}
 
 	public void onGroupCreate(Pair<Integer, String> data) {
