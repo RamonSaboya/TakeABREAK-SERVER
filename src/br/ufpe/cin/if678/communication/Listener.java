@@ -97,14 +97,9 @@ public class Listener {
 		String username = data.getSecond();
 		InetSocketAddress address = data.getThird();
 
-		InetSocketAddress oldAddress = controller.getIDToNameAddress().get(ID).getSecond();
-		
-		controller.getAddressToID().remove(oldAddress);
-
 		controller.getAddressToID().put(address, ID);
 		controller.getNameToID().put(username, ID);
 		controller.getIDToNameAddress().put(ID, new Pair<String, InetSocketAddress>(username, address));
-		
 
 		for (Map.Entry<InetSocketAddress, Pair<Writer, Thread>> entry : controller.getWriters()) {
 			controller.getWriter(entry.getKey()).queueAction(ServerAction.USERS_LIST_UPDATE, controller.getIDToNameAddress());
