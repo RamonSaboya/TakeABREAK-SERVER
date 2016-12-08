@@ -1,7 +1,9 @@
 package br.ufpe.cin.if678.communication;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import br.ufpe.cin.if678.ServerController;
 import br.ufpe.cin.if678.business.Group;
@@ -46,7 +48,26 @@ public class Listener {
 			}
 		}
 
+		controller.setOnline(ID);
 		System.out.println("[LOG] USUÁRIO CONECTOU:    <" + ID + ", " + username + ", " + controller.getAddressPort(address) + ">");
+
+		List<Group> subscriptions = controller.getGroupManager().getSubscriptions(ID);
+		Writer writer = controller.getWriter(ID);
+		for (Group group : subscriptions) {
+			writer.queueAction(ServerAction.SEND_GROUP, group);
+		}
+
+		Queue<Tuple<String, Integer, Object>> queuedMessages = controller.getQueuedMessages(ID);
+
+		if (queuedMessages == null || queuedMessages.isEmpty()) {
+			return;
+		}
+
+		while (!queuedMessages.isEmpty()) {
+			Tuple<String, Integer, Object> tuple = queuedMessages.poll();
+
+			writer.queueAction(ServerAction.GROUP_MESSAGE, tuple);
+		}
 	}
 
 	public void onUserListRequest(InetSocketAddress address) {
@@ -88,7 +109,11 @@ public class Listener {
 
 		controller.getWriter(group.getFounderID()).queueAction(ServerAction.GROUP_MESSAGE, tuple);
 		for (int member : group.getMembers().keySet()) {
-			controller.getWriter(member).queueAction(ServerAction.GROUP_MESSAGE, tuple);
+			if (controller.isOnline(member)) {
+				controller.getWriter(member).queueAction(ServerAction.GROUP_MESSAGE, tuple);
+			} else {
+				controller.queueMessage(member, tuple);
+			}
 		}
 	}
 

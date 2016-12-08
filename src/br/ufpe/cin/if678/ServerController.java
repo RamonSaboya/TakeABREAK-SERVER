@@ -1,14 +1,23 @@
 package br.ufpe.cin.if678;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 
+import br.ufpe.cin.if678.business.Group;
 import br.ufpe.cin.if678.communication.BridgeManager;
 import br.ufpe.cin.if678.communication.Listener;
 import br.ufpe.cin.if678.communication.Reader;
+import br.ufpe.cin.if678.communication.ServerAction;
 import br.ufpe.cin.if678.communication.UserAction;
 import br.ufpe.cin.if678.communication.Writer;
 import br.ufpe.cin.if678.util.Pair;
@@ -58,10 +67,21 @@ public class ServerController {
 
 	private GroupManager groupManager;
 
+	private HashMap<Integer, Queue<Tuple<String, Integer, Object>>> queuedMessages;
+
+	private File serverDirectory;
+
 	/**
 	 * Construtor para iniciar a instância
 	 */
+	@SuppressWarnings("unchecked")
 	private ServerController() {
+		// Lista de usuários online
+		this.onlineIDs = new HashSet<Integer>();
+		this.IDToNameAddress = new HashMap<Integer, Pair<String, InetSocketAddress>>();
+		this.nameToID = new HashMap<String, Integer>();
+		this.addressToID = new HashMap<InetSocketAddress, Integer>();
+
 		// Inicia as variáveis dos mapeamentos
 		this.mapIDToReader = new HashMap<InetSocketAddress, Pair<Reader, Thread>>();
 		this.mapIDToWriter = new HashMap<InetSocketAddress, Pair<Writer, Thread>>();
@@ -75,11 +95,46 @@ public class ServerController {
 
 		this.groupManager = new GroupManager();
 
-		// Lista de usuários online
-		this.onlineIDs = new HashSet<Integer>();
-		this.IDToNameAddress = new HashMap<Integer, Pair<String, InetSocketAddress>>();
-		this.nameToID = new HashMap<String, Integer>();
-		this.addressToID = new HashMap<InetSocketAddress, Integer>();
+		this.queuedMessages = new HashMap<Integer, Queue<Tuple<String, Integer, Object>>>();
+
+		this.serverDirectory = new File("data\\");
+		serverDirectory.mkdirs();
+		for (File file : serverDirectory.listFiles()) {
+			if (file.getName().equals("messages.ser")) {
+				try {
+					FileInputStream FIS = new FileInputStream(file);
+					ObjectInputStream OIS = new ObjectInputStream(FIS);
+
+					queuedMessages = (HashMap<Integer, Queue<Tuple<String, Integer, Object>>>) OIS.readObject();
+
+					OIS.close();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} else if (file.getName().equals("groups.ser")) {
+				try {
+					FileInputStream FIS = new FileInputStream(file);
+					ObjectInputStream OIS = new ObjectInputStream(FIS);
+
+					groupManager.setGroups((HashMap<String, Group>) OIS.readObject());
+
+					OIS.close();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} else if (file.getName().equals("names.ser")) {
+				try {
+					FileInputStream FIS = new FileInputStream(file);
+					ObjectInputStream OIS = new ObjectInputStream(FIS);
+
+					nameToID = (HashMap<String, Integer>) OIS.readObject();
+
+					OIS.close();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 
 	public Reader getReader(InetSocketAddress address) {
@@ -110,6 +165,10 @@ public class ServerController {
 		return onlineIDs.contains(ID);
 	}
 
+	public void setOnline(int ID) {
+		onlineIDs.add(ID);
+	}
+
 	public HashMap<Integer, Pair<String, InetSocketAddress>> getIDToNameAddress() {
 		return IDToNameAddress;
 	}
@@ -120,6 +179,22 @@ public class ServerController {
 
 	public HashMap<InetSocketAddress, Integer> getAddressToID() {
 		return addressToID;
+	}
+
+	public HashMap<Integer, Queue<Tuple<String, Integer, Object>>> getQueuedMessages() {
+		return queuedMessages;
+	}
+
+	public Queue<Tuple<String, Integer, Object>> getQueuedMessages(int ID) {
+		return queuedMessages.get(ID);
+	}
+
+	public void queueMessage(int ID, Tuple<String, Integer, Object> tuple) {
+		if (!queuedMessages.containsKey(ID)) {
+			queuedMessages.put(ID, new LinkedList<Tuple<String, Integer, Object>>());
+		}
+
+		queuedMessages.get(ID).add(tuple);
 	}
 
 	public String getAddressPort(InetSocketAddress address) {
@@ -154,10 +229,26 @@ public class ServerController {
 	 * @param address endereço do socket
 	 */
 	public void clientDisconnect(InetSocketAddress address) {
-		int ID = addressToID.get(address);
-
 		mapIDToReader.get(address).getSecond().interrupt(); // Interrompe a thread de leitura (apenas segurança, thread já deve estar parada nesse ponto)
 		mapIDToWriter.get(address).getFirst().forceStop(); // Força o encerramento da thread de escrita
+
+		mapIDToReader.remove(address);
+		mapIDToWriter.remove(address);
+
+		if (!addressToID.containsKey(address)) {
+			return;
+		}
+
+		int ID = addressToID.get(address);
+
+		IDToNameAddress.remove(ID);
+		addressToID.remove(address);
+
+		onlineIDs.remove(ID);
+
+		for (Map.Entry<InetSocketAddress, Pair<Writer, Thread>> entry : getWriters()) {
+			getWriter(entry.getKey()).queueAction(ServerAction.USERS_LIST_UPDATE, getIDToNameAddress());
+		}
 
 		System.out.println("[LOG] USUÁRIO DESCONECTOU: <" + ID + ", " + IDToNameAddress.get(ID).getFirst() + ", " + getAddressPort(address) + ">");
 	}
@@ -184,6 +275,49 @@ public class ServerController {
 		case RECONNECT:
 			listener.onReconnect((Tuple<Integer, String, InetSocketAddress>) object);
 			break;
+		}
+	}
+
+	public void exit() {
+		File file;
+
+		try {
+			file = new File(serverDirectory, "messages.ser");
+
+			FileOutputStream FOS = new FileOutputStream(file);
+			ObjectOutputStream OOS = new ObjectOutputStream(FOS);
+
+			OOS.writeObject(queuedMessages);
+
+			OOS.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		try {
+			file = new File(serverDirectory, "groups.ser");
+
+			FileOutputStream FOS = new FileOutputStream(file);
+			ObjectOutputStream OOS = new ObjectOutputStream(FOS);
+
+			OOS.writeObject(groupManager.getGroups());
+
+			OOS.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		try {
+			file = new File(serverDirectory, "names.ser");
+
+			FileOutputStream FOS = new FileOutputStream(file);
+			ObjectOutputStream OOS = new ObjectOutputStream(FOS);
+
+			OOS.writeObject(nameToID);
+
+			OOS.close();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
