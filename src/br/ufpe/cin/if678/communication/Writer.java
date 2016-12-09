@@ -89,6 +89,7 @@ public class Writer implements Runnable {
 					 * execução da thread
 					 */
 					if (!run && queue.isEmpty()) {
+						Thread.currentThread().interrupt();
 						return;
 					}
 

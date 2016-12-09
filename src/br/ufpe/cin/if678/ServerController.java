@@ -252,7 +252,7 @@ public class ServerController {
 			@Override
 			public void run() {
 				for (Map.Entry<InetSocketAddress, Pair<Writer, Thread>> entry : getWriters()) {
-					getWriter(entry.getKey()).queueAction(ServerAction.USERS_LIST_UPDATE, IDToNameAddress);
+					getWriter(entry.getKey()).queueAction(ServerAction.USERS_LIST_UPDATE, IDToNameAddress.clone());
 				}
 			}
 		}).start();
