@@ -107,7 +107,11 @@ public class Listener {
 
 		Group group = controller.getGroupManager().getGroup(name);
 
-		controller.getWriter(group.getFounderID()).queueAction(ServerAction.GROUP_MESSAGE, tuple);
+		if(controller.isOnline(group.getFounderID())) {
+			controller.getWriter(group.getFounderID()).queueAction(ServerAction.GROUP_MESSAGE, tuple);
+		} else {
+			controller.queueMessage(group.getFounderID(), tuple);
+		}
 		for (int member : group.getMembers().keySet()) {
 			if (controller.isOnline(member)) {
 				controller.getWriter(member).queueAction(ServerAction.GROUP_MESSAGE, tuple);
