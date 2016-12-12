@@ -277,6 +277,9 @@ public class ServerController {
 		case REQUEST_USERNAME:
 			listener.onUserConnect((String) object, address);
 			break;
+		case PING:
+			listener.onPing(address);
+			break;
 		case REQUEST_USER_LIST:
 			listener.onUserListRequest(address);
 			break;
