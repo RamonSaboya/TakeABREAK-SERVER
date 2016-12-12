@@ -29,7 +29,7 @@ public class FileReceiver extends Thread {
 	public void run() {
 		try {
 			InputStream IS = socket.getInputStream();
-			FileOutputStream FOS = new FileOutputStream("data\\files\\" + groupName + "-" + senderID + "-" + TEMP_FILE_ID);
+			FileOutputStream FOS = new FileOutputStream("data\\files\\" + groupName + "-" + senderID + "-" + TEMP_FILE_ID, offset != 0 ? true : false);
 
 			byte[] buffer = new byte[4 * 1024];
 
