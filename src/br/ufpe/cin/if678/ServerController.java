@@ -63,6 +63,8 @@ public class ServerController {
 	private BridgeManager bridgeManager;
 	private Thread thread;
 
+	private FileManager fileManager;
+
 	private Listener listener;
 
 	private GroupManager groupManager;
@@ -91,6 +93,9 @@ public class ServerController {
 		this.thread = new Thread(bridgeManager);
 		this.thread.start();
 
+		this.fileManager = new FileManager(this);
+		this.fileManager.start();
+
 		this.listener = new Listener(this);
 
 		this.groupManager = new GroupManager();
@@ -99,6 +104,9 @@ public class ServerController {
 
 		this.serverDirectory = new File("data\\");
 		serverDirectory.mkdirs();
+
+		new File("data\\files\\").mkdirs();
+
 		for (File file : serverDirectory.listFiles()) {
 			if (file.getName().equals("messages.ser")) {
 				try {
@@ -155,6 +163,10 @@ public class ServerController {
 
 	public Set<Map.Entry<InetSocketAddress, Pair<Writer, Thread>>> getWriters() {
 		return mapIDToWriter.entrySet();
+	}
+
+	public FileManager getFileManager() {
+		return fileManager;
 	}
 
 	public GroupManager getGroupManager() {
@@ -277,6 +289,10 @@ public class ServerController {
 		case SEND_MESSAGE:
 			Pair<String, Object> pair = (Pair<String, Object>) object;
 			listener.onGroupMessage(new Tuple<String, Integer, Object>(pair.getFirst(), addressToID.get(address), pair.getSecond()));
+			break;
+		case SEND_FILE:
+			Tuple<String, Integer, Tuple<byte[], Long, Long>> data = (Tuple<String, Integer, Tuple<byte[], Long, Long>>) object;
+			getFileManager().listenFor(data.getFirst(), data.getSecond(), data.getThird().getFirst(), data.getThird().getSecond(), data.getThird().getThird());
 			break;
 		case RECONNECT:
 			listener.onReconnect((Tuple<Integer, String, InetSocketAddress>) object);
