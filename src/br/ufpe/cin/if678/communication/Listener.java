@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
+import br.ufpe.cin.if678.FileSender;
 import br.ufpe.cin.if678.ServerController;
 import br.ufpe.cin.if678.business.Group;
 import br.ufpe.cin.if678.util.Pair;
@@ -107,7 +108,7 @@ public class Listener {
 
 		Group group = controller.getGroupManager().getGroup(name);
 
-		if(controller.isOnline(group.getFounderID())) {
+		if (controller.isOnline(group.getFounderID())) {
 			controller.getWriter(group.getFounderID()).queueAction(ServerAction.GROUP_MESSAGE, tuple);
 		} else {
 			controller.queueMessage(group.getFounderID(), tuple);
@@ -133,6 +134,10 @@ public class Listener {
 		for (Map.Entry<InetSocketAddress, Pair<Writer, Thread>> entry : controller.getWriters()) {
 			controller.getWriter(entry.getKey()).queueAction(ServerAction.USERS_LIST_UPDATE, controller.getIDToNameAddress().clone());
 		}
+	}
+
+	public void onReceiveReady(InetSocketAddress address, int tempFileName) {
+		new FileSender(address.getAddress(), tempFileName).start();
 	}
 
 }

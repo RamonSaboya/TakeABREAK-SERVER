@@ -330,6 +330,9 @@ public class ServerController {
 		case RECONNECT:
 			listener.onReconnect((Tuple<Integer, String, InetSocketAddress>) object);
 			break;
+		case RECEIVE_READY:
+			listener.onReceiveReady(address, (Integer) object);
+			break;
 		}
 	}
 
