@@ -40,7 +40,6 @@ public class FileReceiver extends Thread {
 
 			DOS.writeInt(tempFileName);
 			DOS.flush();
-			DOS.close();
 
 			byte[] buffer = new byte[4 * 1024];
 
