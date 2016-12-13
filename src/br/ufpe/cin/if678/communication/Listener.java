@@ -69,10 +69,6 @@ public class Listener {
 			writer.queueAction(ServerAction.GROUP_MESSAGE, tuple);
 		}
 	}
-	
-	public void onPing(InetSocketAddress address) {
-		controller.getWriter(address).queueAction(ServerAction.PONG, null);
-	}
 
 	public void onUserListRequest(InetSocketAddress address) {
 		controller.getWriter(address).queueAction(ServerAction.USERS_LIST_UPDATE, controller.getIDToNameAddress());

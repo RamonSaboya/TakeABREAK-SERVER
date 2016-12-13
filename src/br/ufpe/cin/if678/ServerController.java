@@ -65,6 +65,8 @@ public class ServerController {
 
 	private FileManager fileManager;
 
+	private RTTManager RTTManager;
+
 	private Listener listener;
 
 	private GroupManager groupManager;
@@ -95,6 +97,9 @@ public class ServerController {
 
 		this.fileManager = new FileManager(this);
 		this.fileManager.start();
+
+		this.RTTManager = new RTTManager(this);
+		this.RTTManager.start();
 
 		this.listener = new Listener(this);
 
@@ -276,9 +281,6 @@ public class ServerController {
 		switch (action) {
 		case REQUEST_USERNAME:
 			listener.onUserConnect((String) object, address);
-			break;
-		case PING:
-			listener.onPing(address);
 			break;
 		case REQUEST_USER_LIST:
 			listener.onUserListRequest(address);
