@@ -214,6 +214,30 @@ public class ServerController {
 		queuedMessages.get(ID).add(tuple);
 	}
 
+	public void queueFile(Tuple<String, Integer, Object> tuple) {
+		int senderID = tuple.getSecond();
+
+		Group group = groupManager.getGroup(tuple.getFirst());
+
+		if (group.getFounderID() != senderID) {
+			if (!queuedMessages.containsKey(group.getFounderID())) {
+				queuedMessages.put(group.getFounderID(), new LinkedList<Tuple<String, Integer, Object>>());
+			}
+
+			queuedMessages.get(group.getFounderID()).add(tuple);
+		}
+
+		for (int member : group.getMembers().keySet()) {
+			if (member != senderID) {
+				if (!queuedMessages.containsKey(member)) {
+					queuedMessages.put(member, new LinkedList<Tuple<String, Integer, Object>>());
+				}
+
+				queuedMessages.get(member).add(tuple);
+			}
+		}
+	}
+
 	public String getAddressPort(InetSocketAddress address) {
 		return address.getAddress().getHostAddress() + ":" + address.getPort();
 	}
@@ -296,8 +320,12 @@ public class ServerController {
 			listener.onGroupMessage(new Tuple<String, Integer, Object>(pair.getFirst(), addressToID.get(address), pair.getSecond()));
 			break;
 		case SEND_FILE:
-			Tuple<String, Integer, Tuple<byte[], Long, Long>> data = (Tuple<String, Integer, Tuple<byte[], Long, Long>>) object;
-			getFileManager().listenFor(data.getFirst(), data.getSecond(), data.getThird().getFirst(), data.getThird().getSecond(), data.getThird().getThird());
+			Tuple<String, Integer, Pair<Pair<byte[], Integer>, Pair<Long, Long>>> data = (Tuple<String, Integer, Pair<Pair<byte[], Integer>, Pair<Long, Long>>>) object;
+
+			Pair<byte[], Integer> fileNameInfo = data.getThird().getFirst();
+			Pair<Long, Long> fileSizeInfo = data.getThird().getSecond();
+
+			getFileManager().listenFor(data.getFirst(), data.getSecond(), fileNameInfo.getSecond(), fileNameInfo.getFirst(), fileSizeInfo.getFirst(), fileSizeInfo.getSecond());
 			break;
 		case RECONNECT:
 			listener.onReconnect((Tuple<Integer, String, InetSocketAddress>) object);

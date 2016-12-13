@@ -14,6 +14,7 @@ public class FileManager extends Thread {
 
 	private String groupName;
 	private int senderID;
+	private int tempFileName;
 	private byte[] fileName;
 	private long offset;
 	private long length;
@@ -34,21 +35,22 @@ public class FileManager extends Thread {
 			try {
 				Socket socket = serverSocket.accept();
 
-				new FileReceiver(socket, groupName, senderID, fileName, offset, length).start();
+				new FileReceiver(socket, groupName, senderID, tempFileName, fileName, offset, length).start();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 	}
 
-	public void listenFor(String groupName, int senderID, byte[] fileName, long offset, long length) {
+	public void listenFor(String groupName, int senderID, int tempFileName, byte[] fileName, long offset, long length) {
 		this.groupName = groupName;
 		this.senderID = senderID;
+		this.tempFileName = tempFileName;
 		this.fileName = fileName;
 		this.offset = offset;
 		this.length = length;
 
-		controller.getWriter(senderID).queueAction(ServerAction.START_UPLOAD, fileName);
+		controller.getWriter(senderID).queueAction(ServerAction.START_UPLOAD, null);
 	}
 
 }
