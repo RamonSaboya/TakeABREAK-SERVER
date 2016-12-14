@@ -1,6 +1,7 @@
 package br.ufpe.cin.if678;
 
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,7 +25,7 @@ public class FileReceiver extends Thread {
 		this.socket = socket;
 		this.groupName = groupName;
 		this.senderID = senderID;
-		this.tempFileName = tempFileName == -1 ? TEMP_FILE_ID++ : -1;
+		this.tempFileName = tempFileName == -1 ? TEMP_FILE_ID++ : tempFileName;
 		this.fileName = fileName;
 		this.offset = offset;
 		this.length = length;
@@ -55,9 +56,11 @@ public class FileReceiver extends Thread {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
-		Tuple<Integer, byte[], Long> fileInfo = new Tuple<Integer, byte[], Long>(tempFileName, fileName, length);
-		ServerController.getInstance().queueFile(new Tuple<String, Integer, Object>(groupName, senderID, fileInfo));
+
+		if (new File("data\\files\\" + tempFileName).length() >= length) {
+			Tuple<Integer, byte[], Long> fileInfo = new Tuple<Integer, byte[], Long>(tempFileName, fileName, length);
+			ServerController.getInstance().queueFile(new Tuple<String, Integer, Object>(groupName, senderID, fileInfo));
+		}
 	}
 
 }
