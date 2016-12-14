@@ -18,10 +18,11 @@ public class FileSender extends Thread {
 
 	@Override
 	public void run() {
+		long sent = 0;
+		File file = new File("data\\files\\" + tempFileName);
+
 		try {
 			Socket socket = new Socket(address.getHostAddress(), 1901);
-
-			File file = new File("data\\files\\" + tempFileName);
 
 			FileInputStream FIS = new FileInputStream(file);
 			OutputStream OS = socket.getOutputStream();
@@ -31,6 +32,7 @@ public class FileSender extends Thread {
 			int count;
 			while ((count = FIS.read(buffer)) > 0) {
 				OS.write(buffer, 0, count);
+				sent += count;
 			}
 
 			OS.close();
@@ -38,6 +40,10 @@ public class FileSender extends Thread {
 
 			socket.close();
 		} catch (Exception e) {
+		}
+
+		if (file.length() == sent) {
+			file.delete();
 		}
 	}
 
