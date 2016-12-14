@@ -55,7 +55,7 @@ public class FileReceiver extends Thread {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
 		Tuple<Integer, byte[], Long> fileInfo = new Tuple<Integer, byte[], Long>(tempFileName, fileName, length);
 		ServerController.getInstance().queueFile(new Tuple<String, Integer, Object>(groupName, senderID, fileInfo));
 	}

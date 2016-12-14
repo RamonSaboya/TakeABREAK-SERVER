@@ -232,10 +232,10 @@ public class ServerController {
 		}
 
 		for (int member : group.getMembers().keySet()) {
-			if (isOnline(member)) {
-				getWriter(member).queueAction(ServerAction.GROUP_MESSAGE, tuple);
-			} else {
-				if (member != senderID) {
+			if (member != senderID) {
+				if (isOnline(member)) {
+					getWriter(member).queueAction(ServerAction.GROUP_MESSAGE, tuple);
+				} else {
 					if (!queuedMessages.containsKey(member)) {
 						queuedMessages.put(member, new LinkedList<Tuple<String, Integer, Object>>());
 					}
