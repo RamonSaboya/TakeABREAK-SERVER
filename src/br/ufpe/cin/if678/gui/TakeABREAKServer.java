@@ -6,9 +6,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 import javax.swing.JFrame;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.ScrollPaneConstants;
 
 import br.ufpe.cin.if678.ServerController;
 
@@ -17,11 +14,6 @@ public class TakeABREAKServer extends JFrame {
 
 	public static final Color BACKGROUND_COLOR = new Color(220, 220, 220);
 
-	private static JTable table;
-	private JScrollPane scrollPane;
-
-	private String[] titles = { "Nome", "IP", "Status" };
-	private String[][] data;
 	private static ServerController controller;
 
 	/**
@@ -35,7 +27,7 @@ public class TakeABREAKServer extends JFrame {
 					TakeABREAKServer frame = new TakeABREAKServer();
 					frame.setLocationRelativeTo(null);
 					frame.setVisible(true);
-					
+
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -53,15 +45,6 @@ public class TakeABREAKServer extends JFrame {
 		setBounds(0, 0, 1200, 700);
 		setBackground(BACKGROUND_COLOR);
 		getContentPane().setLayout(null);
-
-//		table = new JTable(data, titles);
-
-		scrollPane = new JScrollPane(table);
-		scrollPane.setBounds(10, 11, 1174, 650);
-		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-
-		getContentPane().add(scrollPane);
 
 		controller = ServerController.getInstance();
 
