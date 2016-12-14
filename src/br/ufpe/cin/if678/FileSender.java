@@ -38,7 +38,6 @@ public class FileSender extends Thread {
 
 			socket.close();
 		} catch (Exception e) {
-			e.printStackTrace();
 		}
 	}
 
