@@ -220,20 +220,28 @@ public class ServerController {
 		Group group = groupManager.getGroup(tuple.getFirst());
 
 		if (group.getFounderID() != senderID) {
-			if (!queuedMessages.containsKey(group.getFounderID())) {
-				queuedMessages.put(group.getFounderID(), new LinkedList<Tuple<String, Integer, Object>>());
-			}
+			if (isOnline(group.getFounderID())) {
+				getWriter(group.getFounderID()).queueAction(ServerAction.GROUP_MESSAGE, tuple);
+			} else {
+				if (!queuedMessages.containsKey(group.getFounderID())) {
+					queuedMessages.put(group.getFounderID(), new LinkedList<Tuple<String, Integer, Object>>());
+				}
 
-			queuedMessages.get(group.getFounderID()).add(tuple);
+				queuedMessages.get(group.getFounderID()).add(tuple);
+			}
 		}
 
 		for (int member : group.getMembers().keySet()) {
-			if (member != senderID) {
-				if (!queuedMessages.containsKey(member)) {
-					queuedMessages.put(member, new LinkedList<Tuple<String, Integer, Object>>());
-				}
+			if (isOnline(member)) {
+				getWriter(member).queueAction(ServerAction.GROUP_MESSAGE, tuple);
+			} else {
+				if (member != senderID) {
+					if (!queuedMessages.containsKey(member)) {
+						queuedMessages.put(member, new LinkedList<Tuple<String, Integer, Object>>());
+					}
 
-				queuedMessages.get(member).add(tuple);
+					queuedMessages.get(member).add(tuple);
+				}
 			}
 		}
 	}
