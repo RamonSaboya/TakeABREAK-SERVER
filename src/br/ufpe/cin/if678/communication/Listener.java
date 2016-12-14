@@ -112,14 +112,12 @@ public class Listener {
 		Group group = controller.getGroupManager().getGroup(name);
 
 		if (controller.isOnline(group.getFounderID())) {
-			System.out.println(controller.getIDToNameAddress().get(group.getFounderID()).getSecond().toString());
 			controller.getWriter(group.getFounderID()).queueAction(ServerAction.GROUP_MESSAGE, tuple);
 		} else {
 			controller.queueMessage(group.getFounderID(), tuple);
 		}
 		for (int member : group.getMembers().keySet()) {
 			if (controller.isOnline(member)) {
-				System.out.println(controller.getIDToNameAddress().get(member).getSecond().toString());
 				controller.getWriter(member).queueAction(ServerAction.GROUP_MESSAGE, tuple);
 			} else {
 				controller.queueMessage(member, tuple);
