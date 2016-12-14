@@ -24,7 +24,8 @@ public class Listener {
 	public void onUserConnect(String username, InetSocketAddress address) {
 		int ID;
 
-		if (controller.getNameToID().containsKey(username) && controller.isOnline(controller.getNameToID().get(username))) {
+		if (controller.getNameToID().containsKey(username)
+				&& controller.isOnline(controller.getNameToID().get(username))) {
 			controller.getWriter(address).queueAction(ServerAction.VERIFY_USERNAME, -1);
 			return;
 		} else if (controller.getNameToID().containsKey(username)) {
@@ -39,7 +40,8 @@ public class Listener {
 		controller.getNameToID().put(username, ID);
 		controller.getIDToNameAddress().put(ID, new Pair<String, InetSocketAddress>(username, address));
 
-		Tuple<Integer, String, InetSocketAddress> data = new Tuple<Integer, String, InetSocketAddress>(ID, username, address);
+		Tuple<Integer, String, InetSocketAddress> data = new Tuple<Integer, String, InetSocketAddress>(ID, username,
+				address);
 		for (Map.Entry<InetSocketAddress, Pair<Writer, Thread>> entry : controller.getWriters()) {
 			InetSocketAddress userAddress = entry.getKey();
 			Writer writer = entry.getValue().getFirst();
@@ -50,7 +52,8 @@ public class Listener {
 		}
 
 		controller.setOnline(ID);
-		System.out.println("[LOG] USUÁRIO CONECTOU:    <" + ID + ", " + username + ", " + controller.getAddressPort(address) + ">");
+		System.out.println("[LOG] USUÁRIO CONECTOU:    <" + ID + ", " + username + ", "
+				+ controller.getAddressPort(address) + ">");
 
 		List<Group> subscriptions = controller.getGroupManager().getSubscriptions(ID);
 		Writer writer = controller.getWriter(ID);
@@ -109,12 +112,14 @@ public class Listener {
 		Group group = controller.getGroupManager().getGroup(name);
 
 		if (controller.isOnline(group.getFounderID())) {
+			System.out.println(controller.getIDToNameAddress().get(group.getFounderID()).getSecond().toString());
 			controller.getWriter(group.getFounderID()).queueAction(ServerAction.GROUP_MESSAGE, tuple);
 		} else {
 			controller.queueMessage(group.getFounderID(), tuple);
 		}
 		for (int member : group.getMembers().keySet()) {
 			if (controller.isOnline(member)) {
+				System.out.println(controller.getIDToNameAddress().get(member).getSecond().toString());
 				controller.getWriter(member).queueAction(ServerAction.GROUP_MESSAGE, tuple);
 			} else {
 				controller.queueMessage(member, tuple);
@@ -130,9 +135,11 @@ public class Listener {
 		controller.getAddressToID().put(address, ID);
 		controller.getNameToID().put(username, ID);
 		controller.getIDToNameAddress().put(ID, new Pair<String, InetSocketAddress>(username, address));
+		controller.setOnline(ID);
 
 		for (Map.Entry<InetSocketAddress, Pair<Writer, Thread>> entry : controller.getWriters()) {
-			controller.getWriter(entry.getKey()).queueAction(ServerAction.USERS_LIST_UPDATE, controller.getIDToNameAddress().clone());
+			controller.getWriter(entry.getKey()).queueAction(ServerAction.USERS_LIST_UPDATE,
+					controller.getIDToNameAddress().clone());
 		}
 	}
 
